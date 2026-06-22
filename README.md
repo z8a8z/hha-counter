@@ -1,0 +1,183 @@
+# HHA — نظام إدارة العداد والعمليات
+
+تطبيق ويب حديث وسهل الاستخدام لإدارة العداد ومتابعة العمليات المختلفة (العداد، المشتريات، الجاهز، السحب، التالف، والتقارير)، مبني باستخدام **React 19 + Vite 6** وقاعدة بيانات **Supabase (PostgreSQL)**.
+
+يتميز التطبيق بواجهة مستخدم كاملة باللغة العربية (RTL) مع الحفاظ على الأرقام باللغة الإنجليزية لتسهيل القراءة والعمليات الحسابية، كما يحتوي على نظام تسجيل دخول آمن ولوحة تحكم لإدارة المستخدمين من قِبل المدير (Admin).
+
+---
+
+## مميزات النظام
+
+| الميزة | الوصف |
+| :--- | :--- |
+| **واجهة عربية بالكامل** | واجهة مستخدم متناسقة ومصممة للغة العربية باتجاه من اليمين إلى اليسار (RTL). |
+| **تبويبات العمليات** | لوحة تحكم تحتوي على تبويبات للعداد الأساسي، المشتريات، الجاهز، السحب، التالف، والتقارير. |
+| **نظام الصلاحيات والدخول** | حماية كاملة للصفحات؛ لا يمكن تصفح النظام إلا بعد تسجيل الدخول. |
+| **إدارة المستخدمين** | يمكن للمدير (Admin) إضافة مستخدمين جدد وتعديل كلمات المرور الخاصة بهم عبر صفحة الإعدادات. |
+| **قاعدة بيانات سحابية** | يتم حفظ قيم العداد وبيانات المستخدمين بشكل فوري وآمن في Supabase. |
+| **تصميم عصري متجاوب** | واجهة جذابة بتأثيرات بصرية حديثة (Glassmorphism) متوافقة مع جميع مقاسات الشاشات وأجهزة الكمبيوتر. |
+
+---
+
+## المتطلبات الأساسية (تثبت لمرة واحدة)
+
+تمت كتابة هذه الإرشادات لتناسب نظام **Linux Mint / Ubuntu**.
+
+### 1. تثبيت Node.js (الإصدار 18 أو أحدث)
+افتح الطرفية (`Ctrl+Alt+T`) ونفّذ الأوامر التالية لتثبيت Node.js و npm:
+```bash
+# إضافة مستودع NodeSource
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+
+# تثبيت Node.js
+sudo apt install -y nodejs
+
+# التحقق من التثبيت
+node --version   # يجب أن يظهر v20.x.x أو أحدث
+npm --version    # يجب أن يظهر 10.x.x أو أحدث
+```
+
+### 2. تثبيت Git
+```bash
+sudo apt install -y git
+
+# التحقق من التثبيت
+git --version
+```
+
+### 3. إنشاء حساب Supabase
+قم بزيارة موقع **[supabase.com](https://supabase.com)** وسجل الدخول باستخدام حساب GitHub الخاص بك (الخطة المجانية كافية تماماً).
+
+---
+
+## خطوات الإعداد والتشغيل
+
+### الخطوة 1 — تحميل المشروع (Clone)
+```bash
+cd ~
+git clone https://github.com/YOUR_USERNAME/hha-sys.git
+cd hha-sys
+```
+
+### الخطوة 2 — تثبيت الحزم البرمجية
+```bash
+npm install
+```
+
+### الخطوة 3 — إعداد قاعدة البيانات في Supabase
+1. من لوحة تحكم Supabase، قم بإنشاء مشروع جديد باسم `hha-sys`.
+2. بعد اكتمال إنشاء المشروع، انتقل إلى **SQL Editor** من القائمة الجانبية اليسرى.
+3. انقر على **New query** والصق السكربت التالي لتهيئة الجداول والمستخدم الافتراضي:
+
+```sql
+-- 1. إنشاء جدول العداد الأساسي
+CREATE TABLE IF NOT EXISTS public.counter (
+  id         INTEGER PRIMARY KEY DEFAULT 1,
+  value      INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- إدراج الصف الافتراضي للعداد بقيمة صفر
+INSERT INTO public.counter (id, value)
+VALUES (1, 0)
+ON CONFLICT (id) DO NOTHING;
+
+-- تفعيل سياسات الحماية لجداول العداد (RLS) وتسهيل الوصول العام
+ALTER TABLE public.counter ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow read access" ON public.counter FOR SELECT USING (true);
+CREATE POLICY "Allow insert" ON public.counter FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow update" ON public.counter FOR UPDATE USING (true);
+
+-- 2. إنشاء جدول المستخدمين
+CREATE TABLE IF NOT EXISTS public.app_users (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  username text UNIQUE NOT NULL,
+  password text NOT NULL, -- تُخزن مشفرة بصيغة SHA-256
+  role text NOT NULL DEFAULT 'user',
+  created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- تفعيل سياسات الحماية لجدول المستخدمين وتسهيل العمليات للتطبيق
+ALTER TABLE public.app_users ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable all operations for public" ON public.app_users FOR ALL USING (true) WITH CHECK (true);
+
+-- إدراج حساب المدير الافتراضي (اسم المستخدم: admin / كلمة المرور: 0878)
+-- كلمة المرور مشفرة هنا بنظام SHA-256
+INSERT INTO public.app_users (username, password, role)
+VALUES ('admin', 'f4c0cea75a69f325f85fa6c273d3fae5d0caafa7edd774881d64ed664f3cefeb', 'admin')
+ON CONFLICT (username) DO NOTHING;
+```
+4. اضغط على زر **Run** لتنفيذ السكربت.
+
+### الخطوة 4 — ربط التطبيق بقاعدة البيانات
+1. في لوحة تحكم Supabase، اذهب إلى **Project Settings** (أيقونة الترس أسفل اليسار) ثم **API**.
+2. انسخ قيمتي **Project URL** و **anon public API Key**.
+3. قم بإنشاء ملف `.env` في المجلد الرئيسي للمشروع:
+   ```bash
+   cp .env.example .env
+   ```
+4. افتح الملف `.env` باستخدام أي محرر نصوص وضع القيم الخاصة بك:
+   ```env
+   VITE_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+   VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+   ```
+
+### الخطوة 5 — تشغيل النظام محلياً
+نفّذ الأمر التالي لبدء تشغيل خادم التطوير:
+```bash
+npm run dev
+```
+سيظهر لك رابط التشغيل المحلي (عادةً **http://localhost:5173**). افتحه في المتصفح لتجربة النظام!
+
+---
+
+## بيانات الدخول الافتراضية للمدير
+* **اسم المستخدم:** `admin`
+* **كلمة المرور:** `0878`
+* *تنويه: يمكن للمدير تعديل كلمة المرور أو إضافة حسابات مستخدمين إضافيين في أي وقت من خلال قسم "المستخدمين" في صفحة الإعدادات.*
+
+---
+
+## بنية وتوزيع المجلدات
+```
+hha-sys/
+│
+├── index.html                 # ملف البداية الرئيسي (معدّ لدعم اتجاه RTL)
+├── package.json               # حزم وتكوينات المشروع
+├── vite.config.js             # إعدادات Vite
+├── .env.example               # نموذج لملف ربط قاعدة البيانات
+├── .env                       # ملف الربط الفعلي الخاص بك (يتجاهله Git لأمانك)
+│
+└── src/
+    ├── main.jsx               # نقطة الانطلاق لتطبيق React
+    ├── App.jsx                # المكون الرئيسي (يشمل التوجيه Routes وحماية الصفحات)
+    ├── App.css                # التنسيقات العامة والتصميم العصري (ألوان داكنة، تأثير الزجاج)
+    │
+    ├── components/
+    │   ├── Header.jsx         # شريط التنقل العلوي (يتضمن شعار HHA وخروج/إعدادات)
+    │   ├── Login.jsx          # صفحة تسجيل الدخول باللغة العربية
+    │   ├── Home.jsx           # الصفحة الرئيسية المحتوية على التبويبات الستة
+    │   ├── Counter.jsx        # تبويب العداد الأساسي وتفاعله مع قاعدة البيانات
+    │   ├── Settings.jsx       # صفحة إعدادات النظام للمدير
+    │   └── UserManagement.jsx # واجهة إدارة وإضافة المستخدمين وتحديث كلمات المرور
+    │
+    ├── hooks/
+    │   ├── useCounter.js      # منطق الاتصال بعداد Supabase
+    │   └── useAuth.jsx        # سياق (Context) التحقق وصلاحيات المستخدمين
+    │
+    └── lib/
+        ├── supabase.js        # تهيئة والتحقق من اتصال عميل Supabase
+        ├── database.js        # استعلامات قاعدة البيانات للعداد والمستخدمين
+        ├── auth.js            # شفرة تشفير كلمات المرور باستخدام SHA-256
+        └── debug.js           # نظام تسجيل وتتبع الأخطاء البرمجية في المتصفح
+```
+
+---
+
+## أوامر التطوير والتشغيل
+| الأمر | الوظيفة |
+| :--- | :--- |
+| `npm run dev` | تشغيل خادم التطوير المحلي. |
+| `npm run build` | بناء وتجهيز التطبيق للإنتاج (Production). |
+| `npm run preview` | معاينة نسخة الإنتاج محلياً للتأكد من خلوها من المشاكل. |
