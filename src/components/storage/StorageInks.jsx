@@ -3,7 +3,7 @@ import {
   getInks, getInkCompanies, getInkColors, getInkWeights,
   addInkCompany, addInkColor, addInkWeight,
   upsertInk, deleteInk, deleteInkCompany, deleteInkColor, deleteInkWeight
-} from '../lib/database.js';
+} from '../../lib/database.js';
 
 export default function StorageInks() {
   const [items, setItems] = useState([]);

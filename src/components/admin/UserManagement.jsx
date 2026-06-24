@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getUsers, addUser, updateUserPassword } from '../lib/database.js';
-import { hashPassword } from '../lib/auth.js';
+import { getUsers, addUser, updateUserPassword } from '../../lib/database.js';
+import { hashPassword } from '../../lib/auth.js';
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);

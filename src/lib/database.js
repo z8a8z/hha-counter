@@ -689,3 +689,48 @@ export async function createFullOrder(orderId, formData) {
   }
   return { data, error: null };
 }
+
+export async function getOrderForm(orderId) {
+  const { valid, missing } = validateEnv();
+  if (!valid) return { data: null, error: 'Env not configured' };
+  const { data, error } = await supabase
+    .from('order_forms')
+    .select('*')
+    .eq('order_id', orderId)
+    .maybeSingle();
+  if (error) {
+    debug.error(MODULE, 'getOrderForm error', error);
+    return { data: null, error: error.message };
+  }
+  return { data, error: null };
+}
+
+export async function getPrintSettings() {
+  const { valid, missing } = validateEnv();
+  if (!valid) return { data: null, error: 'Env not configured' };
+  const { data, error } = await supabase
+    .from('print_settings')
+    .select('settings')
+    .eq('id', 1)
+    .maybeSingle();
+  if (error) {
+    debug.error(MODULE, 'getPrintSettings error', error);
+    return { data: null, error: error.message };
+  }
+  return { data: data ? data.settings : null, error: null };
+}
+
+export async function savePrintSettings(settings) {
+  const { valid, missing } = validateEnv();
+  if (!valid) return { error: 'Env not configured' };
+  const { error } = await supabase
+    .from('print_settings')
+    .upsert({ id: 1, settings, updated_at: new Date().toISOString() });
+  if (error) {
+    debug.error(MODULE, 'savePrintSettings error', error);
+    return { error: error.message };
+  }
+  return { error: null };
+}
+
+

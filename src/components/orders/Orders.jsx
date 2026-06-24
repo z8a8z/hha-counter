@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { getOrders, createOrder, createFullOrder, updateOrder, deleteOrder, getReadyOrders } from '../lib/database.js';
+import { getOrders, createOrder, createFullOrder, updateOrder, deleteOrder, getReadyOrders, getOrderForm, getPrintSettings } from '../../lib/database.js';
 import OrderForm from './OrderForm.jsx';
-import { useAuth } from '../hooks/useAuth.jsx';
+import { useAuth } from '../../hooks/useAuth.jsx';
+import { usePrint } from '../../hooks/usePrint.js';
+import { PrintTemplates } from '../common/PrintTemplates.js';
 
 const STATUS_LABELS = {
   pending: 'قيد الانتظار',
@@ -61,11 +63,34 @@ function PreparedCard({ readyOrder }) {
 
 export default function Orders() {
   const { user } = useAuth();
+  const { printHtml } = usePrint();
   const [orders, setOrders] = useState([]);
   const [readyOrders, setReadyOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  const handlePrint = async (order, type) => {
+    setLoading(true);
+    setError('');
+    const [formRes, settingsRes] = await Promise.all([
+      getOrderForm(order.id),
+      getPrintSettings()
+    ]);
+    setLoading(false);
+    if (formRes.error) {
+      setError('فشل جلب تفاصيل الاستمارة للطباعة: ' + formRes.error);
+      return;
+    }
+    if (!formRes.data) {
+      setError('لم يتم العثور على استمارة تفصيلية لهذه الطلبية. لا يمكن طباعتها.');
+      return;
+    }
+    const html = type === 'management' 
+      ? PrintTemplates.orderManagement(order, formRes.data, settingsRes.data || {})
+      : PrintTemplates.orderWork(order, formRes.data, settingsRes.data || {});
+    printHtml(html);
+  };
 
   // Dedicated canvas toggle
   const [showPrepared, setShowPrepared] = useState(false);
@@ -282,8 +307,10 @@ export default function Orders() {
         return;
       }
       const orderId = baseData.id;
+      // Extract fields that do not exist on the order_forms database table
+      const { customer_name, order_date, ...detailedFields } = formData;
       // Save full order form data
-      const { data: fullData, error: fullErr } = await createFullOrder(orderId, formData);
+      const { data: fullData, error: fullErr } = await createFullOrder(orderId, detailedFields);
       setLoading(false);
       if (fullErr) {
         setError('فشل حفظ بيانات الاستمارة: ' + fullErr);
@@ -356,6 +383,22 @@ export default function Orders() {
                               title="حذف"
                             >
                               🗑️ حذف
+                            </button>
+                            <button
+                              className="btn btn-small btn-outline"
+                              onClick={() => handlePrint(order, 'management')}
+                              style={{ backgroundColor: '#f0f9ff', borderColor: '#bae6fd' }}
+                              title="طباعة الإدارة"
+                            >
+                              📄 إدارة
+                            </button>
+                            <button
+                              className="btn btn-small btn-outline"
+                              onClick={() => handlePrint(order, 'work')}
+                              style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}
+                              title="طباعة الورشة"
+                            >
+                              🛠️ ورشة
                             </button>
                           </div>
                         </td>

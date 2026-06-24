@@ -4,7 +4,7 @@ import {
   getPipes, getPipeLengths,
   getLiquids, getLiquidTypes,
   getInks, getInkCompanies, getInkColors
-} from '../lib/database.js';
+} from '../../lib/database.js';
 
 const storageTabs = [
   { id: 'rolls', label: 'رولات' },
@@ -189,17 +189,18 @@ function ViewPipes() {
     return <div className="storage-loading"><div className="spinner"></div><p>جاري تحميل المواسير...</p></div>;
   }
 
-  const totalQuantity = items.reduce((sum, i) => sum + (i.quantity || 0), 0);
+  const activeItems = items.filter(i => (parseFloat(i.quantity) || 0) > 0);
+  const totalQuantity = activeItems.reduce((sum, i) => sum + (parseFloat(i.quantity) || 0), 0);
 
   return (
     <div className="storage-view-entity">
       {error && <div className="error-banner">{error}</div>}
 
-      <StatsBar totalItems={items.length} totalQuantity={totalQuantity} label="pcs" />
+      <StatsBar totalItems={activeItems.length} totalQuantity={totalQuantity} label="pcs" />
 
       <div className="storage-view-panel">
-        <h3>مواسير المخزن ({items.length})</h3>
-        {items.length === 0 ? (
+        <h3>مواسير المخزن ({activeItems.length})</h3>
+        {activeItems.length === 0 ? (
           <div className="empty-state">لا توجد مواسير مسجلة بعد</div>
         ) : (
           <div className="storage-table-wrap">
@@ -212,8 +213,8 @@ function ViewPipes() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
-                  <tr key={item.id} className={item.quantity === 0 ? 'row-zero' : ''}>
+                {activeItems.map((item) => (
+                  <tr key={item.id}>
                     <td><span className="mono">{item.length_label}</span></td>
                     <td><strong>{item.quantity}</strong></td>
                     <td className="notes-cell">{item.notes || '-'}</td>
@@ -271,17 +272,18 @@ function ViewLiquids() {
     return <div className="storage-loading"><div className="spinner"></div><p>جاري تحميل السوائل...</p></div>;
   }
 
-  const totalQuantity = items.reduce((sum, i) => sum + (i.quantity || 0), 0);
+  const activeItems = items.filter(i => (parseFloat(i.quantity) || 0) > 0);
+  const totalQuantity = activeItems.reduce((sum, i) => sum + (parseFloat(i.quantity) || 0), 0);
 
   return (
     <div className="storage-view-entity">
       {error && <div className="error-banner">{error}</div>}
 
-      <StatsBar totalItems={items.length} totalQuantity={totalQuantity.toFixed(2)} label="liter" />
+      <StatsBar totalItems={activeItems.length} totalQuantity={totalQuantity.toFixed(2)} label="liter" />
 
       <div className="storage-view-panel">
-        <h3>سوائل المخزن ({items.length})</h3>
-        {items.length === 0 ? (
+        <h3>سوائل المخزن ({activeItems.length})</h3>
+        {activeItems.length === 0 ? (
           <div className="empty-state">لا توجد سوائل مسجلة بعد</div>
         ) : (
           <div className="storage-table-wrap">
@@ -295,8 +297,8 @@ function ViewLiquids() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
-                  <tr key={item.id} className={item.quantity === 0 ? 'row-zero' : ''}>
+                {activeItems.map((item) => (
+                  <tr key={item.id}>
                     <td><strong>{item.type_name}</strong></td>
                     <td><span className="mono">{item.quantity}</span></td>
                     <td>{item.unit}</td>
@@ -360,17 +362,18 @@ function ViewInks() {
     return <div className="storage-loading"><div className="spinner"></div><p>جاري تحميل الأحبار...</p></div>;
   }
 
-  const totalQuantity = items.reduce((sum, i) => sum + (i.quantity || 0), 0);
+  const activeItems = items.filter(i => (parseFloat(i.quantity) || 0) > 0);
+  const totalQuantity = activeItems.reduce((sum, i) => sum + (parseFloat(i.quantity) || 0), 0);
 
   return (
     <div className="storage-view-entity">
       {error && <div className="error-banner">{error}</div>}
 
-      <StatsBar totalItems={items.length} totalQuantity={totalQuantity.toFixed(2)} label="kg" />
+      <StatsBar totalItems={activeItems.length} totalQuantity={totalQuantity.toFixed(2)} label="kg" />
 
       <div className="storage-view-panel">
-        <h3>أحبار المخزن ({items.length})</h3>
-        {items.length === 0 ? (
+        <h3>أحبار المخزن ({activeItems.length})</h3>
+        {activeItems.length === 0 ? (
           <div className="empty-state">لا توجد أحبار مسجلة بعد</div>
         ) : (
           <div className="storage-table-wrap">
@@ -384,8 +387,8 @@ function ViewInks() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
-                  <tr key={item.id} className={item.quantity === 0 ? 'row-zero' : ''}>
+                {activeItems.map((item) => (
+                  <tr key={item.id}>
                     <td>{item.company_name}</td>
                     <td>{item.color_name}</td>
                     <td><strong className="mono">{item.quantity}</strong></td>

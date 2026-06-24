@@ -3,7 +3,7 @@ import {
   getRolls, getRollWidths, getRollTypes,
   addRollWidth, addRollType,
   insertRoll, updateRoll, deleteRoll, deleteRollWidth, deleteRollType
-} from '../lib/database.js';
+} from '../../lib/database.js';
 
 export default function StorageRolls() {
   const [items, setItems] = useState([]);

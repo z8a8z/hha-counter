@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getReadyOrders, createReadyOrder, saveReadyOrder, deleteReadyOrder, markReadyOrder, getOrders } from '../lib/database.js';
-import { debug } from '../lib/debug.js';
+import { getReadyOrders, createReadyOrder, saveReadyOrder, deleteReadyOrder, markReadyOrder, getOrders, getPrintSettings } from '../../lib/database.js';
+import { debug } from '../../lib/debug.js';
+import { usePrint } from '../../hooks/usePrint.js';
+import { PrintTemplates } from '../common/PrintTemplates.js';
 
 const MODULE = 'ReadyOrders';
 
@@ -105,9 +107,44 @@ function KeyboardSidebar({ activeField, onKey, onSave, saveDisabled }) {
 /* ─── Main Component ─────────────────────────────────────── */
 export default function ReadyOrders() {
   const [orders, setOrders] = useState([]);
+  const { printHtml } = usePrint();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  const handlePrint = async (order, e) => {
+    if (e && e.stopPropagation) {
+      e.stopPropagation();
+    }
+    
+    let targetOrder;
+    if (order) {
+      targetOrder = order;
+    } else if (editingOrder) {
+      // Build from current editor state so unsaved inputs are printed!
+      targetOrder = {
+        ...editingOrder,
+        name: orderName,
+        pipe_length: parseFloat(pipeLength) || 0,
+        pipe_weight: parseFloat(pipeWeight) || 0,
+        ready_order_rolls: rolls
+          .map(r => ({
+            id: r.id,
+            weight: parseFloat(r.weight) || 0
+          }))
+          .filter(r => r.weight > 0)
+      };
+    }
+    
+    if (!targetOrder) return;
+    
+    setLoading(true);
+    const { data: settings } = await getPrintSettings();
+    setLoading(false);
+    
+    const html = PrintTemplates.preparationCard(targetOrder, settings || {});
+    printHtml(html);
+  };
 
   // Editing state
   const [editingOrder, setEditingOrder] = useState(null);
@@ -318,9 +355,6 @@ export default function ReadyOrders() {
     }
   };
 
-  const handlePrint = () => {
-    alert('وظيفة الطباعة غير مفعلة حالياً. (نسخة تجريبية)');
-  };
 
   /* ─── Keyboard injection ─────────────────────────────────── */
   const handleKeypadKey = useCallback((key) => {
@@ -605,12 +639,13 @@ export default function ReadyOrders() {
                   <div className="order-card-header">
                     <h3>{order.name}</h3>
                     <button
-                      className="btn-delete"
-                      onClick={(e) => handleDeleteOrder(order.id, order.name, e)}
-                      title="حذف الطلبية"
+                      type="button"
+                      className="card-print-btn"
+                      onClick={(e) => handlePrint(order, e)}
+                      title="طباعة بطاقة التجهيز"
                       disabled={loading}
                     >
-                      🗑️
+                      🖨️
                     </button>
                   </div>
 

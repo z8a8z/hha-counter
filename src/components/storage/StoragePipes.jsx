@@ -3,8 +3,8 @@ import {
   getPipes, getPipeLengths,
   addPipeLength,
   upsertPipe, deletePipe, deletePipeLength
-} from '../lib/database.js';
-import { useStorageEntity } from '../hooks/useStorage.js';
+} from '../../lib/database.js';
+import { useStorageEntity } from '../../hooks/useStorage.js';
 
 const pipesApi = {
   getItems: getPipes,

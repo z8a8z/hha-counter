@@ -1,22 +1,22 @@
 import { useState } from 'react';
-import Counter from './Counter.jsx';
-import Purchases from './Purchases.jsx';
-import ReadyOrders from './ReadyOrders.jsx';
-import Orders from './Orders.jsx';
-import StorageDashboard from './StorageDashboard.jsx';
+import Counter from './counter/Counter.jsx';
+import Purchases from './purchases/Purchases.jsx';
+import ReadyOrders from './orders/ReadyOrders.jsx';
+import Orders from './orders/Orders.jsx';
+import StorageDashboard from './storage/StorageDashboard.jsx';
+
+const TABS = [
+  { id: 'counter',   label: 'العداد',     icon: '🔢' },
+  { id: 'purchases', label: 'مشتريات',    icon: '🛒' },
+  { id: 'ready',     label: 'جاهز',       icon: '📦' },
+  { id: 'orders',    label: 'الطلبيات',   icon: '📋' },
+  { id: 'withdraw',  label: 'سحب',        icon: '📤' },
+  { id: 'damaged',   label: 'تالف',       icon: '⚠️' },
+  { id: 'storage',   label: 'مخزن',       icon: '🏭' },
+  { id: 'report',    label: 'تقرير',      icon: '📊' },
+];
 
 export default function Home() {
-  const tabs = [
-    { id: 'counter', label: 'العداد' },
-    { id: 'purchases', label: 'مشتريات' },
-    { id: 'ready', label: 'جاهز' },
-    { id: 'orders', label: 'الطلبيات' },
-    { id: 'withdraw', label: 'سحب' },
-    { id: 'damaged', label: 'تالف' },
-    { id: 'storage', label: 'مخزن' },
-    { id: 'report', label: 'تقرير' }
-  ];
-
   const [activeTab, setActiveTab] = useState('counter');
   const [visitedTabs, setVisitedTabs] = useState(new Set(['counter']));
 
@@ -32,18 +32,21 @@ export default function Home() {
 
   return (
     <div className="home-container">
+      {/* Tab strip */}
       <div className="home-tabs-header">
-        {tabs.map((tab) => (
+        {TABS.map((tab) => (
           <button
             key={tab.id}
             className={`tab ${activeTab === tab.id ? 'active' : ''}`}
             onClick={() => handleTabChange(tab.id)}
           >
+            <span style={{ marginLeft: '0.3rem', fontSize: '0.9em', opacity: 0.8 }}>{tab.icon}</span>
             {tab.label}
           </button>
         ))}
       </div>
 
+      {/* Tab panels (kept mounted after first visit for performance) */}
       <div className="tab-content">
         {visitedTabs.has('counter') && (
           <div style={{ display: activeTab === 'counter' ? 'block' : 'none' }}>
@@ -67,12 +70,12 @@ export default function Home() {
         )}
         {visitedTabs.has('withdraw') && (
           <div style={{ display: activeTab === 'withdraw' ? 'block' : 'none' }} className="empty-tab">
-            قسم سحب فارغ حالياً
+            قسم السحب قيد التطوير 🔧
           </div>
         )}
         {visitedTabs.has('damaged') && (
           <div style={{ display: activeTab === 'damaged' ? 'block' : 'none' }} className="empty-tab">
-            قسم تالف فارغ حالياً
+            قسم التالف قيد التطوير 🔧
           </div>
         )}
         {visitedTabs.has('storage') && (
@@ -82,11 +85,10 @@ export default function Home() {
         )}
         {visitedTabs.has('report') && (
           <div style={{ display: activeTab === 'report' ? 'block' : 'none' }} className="empty-tab">
-            قسم تقرير فارغ حالياً
+            قسم التقارير قيد التطوير 🔧
           </div>
         )}
       </div>
     </div>
   );
 }
-

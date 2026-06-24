@@ -8,7 +8,7 @@ import {
   getInkColors, addInkColor, deleteInkColor,
   getInkWeights, addInkWeight, deleteInkWeight,
   getPurchaseOffices, addPurchaseOffice, deletePurchaseOffice
-} from '../lib/database.js';
+} from '../../lib/database.js';
 
 /**
  * VariationManager – manages lookup/category values for the storage system.

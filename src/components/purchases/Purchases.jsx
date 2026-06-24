@@ -9,8 +9,8 @@ import {
   getPipeLengths,
   getLiquidTypes,
   getInkCompanies, getInkColors, getInkWeights
-} from '../lib/database.js';
-import { useAuth } from '../hooks/useAuth.jsx';
+} from '../../lib/database.js';
+import { useAuth } from '../../hooks/useAuth.jsx';
 
 const ITEM_TYPES = [
   { id: 'roll', label: 'رول' },

@@ -5,7 +5,7 @@
  * Shows loading, error, and saving states with clear messaging.
  */
 
-import { useCounter } from '../hooks/useCounter.js';
+import { useCounter } from '../../hooks/useCounter.js';
 
 export default function Counter() {
   const { value, loading, error, saving, increment, refresh } = useCounter();

@@ -3,8 +3,8 @@ import {
   getLiquids, getLiquidTypes,
   addLiquidType,
   upsertLiquid, deleteLiquid
-} from '../lib/database.js';
-import { useStorageEntity } from '../hooks/useStorage.js';
+} from '../../lib/database.js';
+import { useStorageEntity } from '../../hooks/useStorage.js';
 
 const liquidsApi = {
   getItems: getLiquids,
