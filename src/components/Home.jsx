@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Counter from './Counter.jsx';
 import Purchases from './Purchases.jsx';
 import ReadyOrders from './ReadyOrders.jsx';
+import Orders from './Orders.jsx';
 import StorageDashboard from './StorageDashboard.jsx';
 
 export default function Home() {
@@ -9,6 +10,7 @@ export default function Home() {
     { id: 'counter', label: 'العداد' },
     { id: 'purchases', label: 'مشتريات' },
     { id: 'ready', label: 'جاهز' },
+    { id: 'orders', label: 'الطلبيات' },
     { id: 'withdraw', label: 'سحب' },
     { id: 'damaged', label: 'تالف' },
     { id: 'storage', label: 'مخزن' },
@@ -58,6 +60,11 @@ export default function Home() {
             <ReadyOrders />
           </div>
         )}
+        {visitedTabs.has('orders') && (
+          <div style={{ display: activeTab === 'orders' ? 'block' : 'none' }}>
+            <Orders />
+          </div>
+        )}
         {visitedTabs.has('withdraw') && (
           <div style={{ display: activeTab === 'withdraw' ? 'block' : 'none' }} className="empty-tab">
             قسم سحب فارغ حالياً
@@ -82,3 +89,4 @@ export default function Home() {
     </div>
   );
 }
+

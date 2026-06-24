@@ -1798,6 +1798,42 @@ td {
   background: rgba(245, 158, 11, 0.25);
 }
 
+/* Active field indicator strip */
+.keyboard-active-indicator {
+  font-size: 0.78rem;
+  color: var(--color-primary, #6366f1);
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+  text-align: center;
+  min-height: 1.3em;
+  letter-spacing: 0.01em;
+  transition: color 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Save shortcut key */
+.keyboard-key.key-save {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.25) 0%, rgba(99, 102, 241, 0.15) 100%);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.3);
+  font-size: 1rem;
+  flex: 1;
+  letter-spacing: 0.03em;
+}
+
+.keyboard-key.key-save:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.4) 0%, rgba(99, 102, 241, 0.25) 100%);
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+.keyboard-key.key-save:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* ── Order Card Status Badge ─────────────────────────────── */
 .order-card-status {
   padding: 0.25rem 0;
@@ -2037,4 +2073,594 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
+}
+
+/* ── Orders Section (الطلبيات) ────────────────────────────── */
+.orders-layout {
+  padding: 1.5rem;
+  min-height: calc(100vh - 80px);
+}
+
+.orders-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.orders-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.orders-header-bar h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.orders-filters {
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.4rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  width: fit-content;
+}
+
+.filter-btn {
+  padding: 0.5rem 1.2rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.filter-btn.active {
+  color: #fff;
+  background: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+}
+
+/* Table styling for Orders */
+.orders-table-wrapper {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.orders-table th {
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 1rem 1.2rem;
+  text-align: right;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.orders-table td {
+  padding: 1rem 1.2rem;
+  text-align: right;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #e2e8f0;
+  vertical-align: middle;
+}
+
+.orders-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.details-cell {
+  max-width: 250px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--color-text-muted) !important;
+  font-size: 0.9rem;
+}
+
+.creator-badge {
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.status-badge {
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.status-badge.status-pending {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.status-badge.status-completed {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.status-badge.status-cancelled {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.table-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-start;
+}
+
+/* Form overlay & modal */
+.form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.form-modal {
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 1000px;
+  max-height: 90dvh;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(20px) scale(0.98);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.form-modal-header {
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(30, 41, 59, 0.4);
+}
+
+.form-modal-header h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  background: linear-gradient(135deg, #a5b4fc, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.form-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Custom Scrollbar for Form Body */
+.form-modal-body::-webkit-scrollbar {
+  width: 8px;
+}
+.form-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.form-modal-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+.form-modal-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.form-modal-footer {
+  padding: 1.25rem 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(30, 41, 59, 0.4);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Form sections styled as clean visual cards */
+.form-card-section {
+  background: rgba(30, 41, 59, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  position: relative;
+}
+
+.form-card-section h4 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #818cf8;
+  margin: 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Form Grids for Professional Data Entry Alignment */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.form-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+
+@media (max-width: 800px) {
+  .form-grid-2,
+  .form-grid-3,
+  .form-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group.span-full {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  color: #f8fafc;
+  font-size: 0.95rem;
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  width: 100%;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: #6366f1;
+  background: rgba(15, 23, 42, 0.8);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.form-group textarea {
+  resize: vertical;
+}
+
+/* Custom Checkbox Design */
+.form-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  user-select: none;
+  color: #f1f5f9;
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.5rem 0;
+}
+
+.form-checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  accent-color: #6366f1;
+  cursor: pointer;
+  margin: 0;
+}
+
+/* Rectangle Toggle Group for work types */
+.rect-toggle-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .rect-toggle-group {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.rect-toggle {
+  text-align: center;
+  padding: 0.75rem 1rem;
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #94a3b8;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rect-toggle:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #f1f5f9;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.rect-toggle.selected {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: #6366f1;
+  color: #a5b4fc;
+  box-shadow: 0 0 0 1px #6366f1;
+}
+
+/* Modal Action Footer */
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* Ensure font weight utility is available */
+.font-bold {
+  font-weight: 600;
+}
+
+.select-order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.select-order-item:hover {
+  background: rgba(99, 102, 241, 0.12) !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  transform: translateY(-1px);
+}
+
+.order-card-closed {
+  opacity: 0.85;
+  border-color: rgba(239, 68, 68, 0.2) !important;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+}
+
+.order-card-closed:hover {
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+
+/* ── Prepared Canvas Toggle ────────────────────────────────── */
+.prepared-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.prepared-toggle-label {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ── Orders Table Row Expanded State ───────────────────────── */
+.order-row-expanded td {
+  border-bottom: none !important;
+  background: rgba(99, 102, 241, 0.04);
+}
+
+/* ── Prepared Canvas Row ───────────────────────────────────── */
+.prepared-canvas-row td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  padding: 0 !important;
+}
+
+.prepared-canvas {
+  background: rgba(10, 10, 20, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(99, 102, 241, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 1.25rem 1.5rem 1.5rem;
+  animation: canvasSlideDown 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes canvasSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.prepared-canvas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.prepared-canvas-title {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+}
+
+.prepared-canvas-title strong {
+  color: #a5b4fc;
+}
+
+.prepared-canvas-count {
+  font-size: 0.8rem;
+  background: rgba(99, 102, 241, 0.15);
+  color: #a5b4fc;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-weight: 600;
+}
+
+.prepared-canvas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.85rem;
+}
+
+/* ── Prepared Card ─────────────────────────────────────────── */
+.prepared-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  transition: border-color 0.2s ease, background 0.2s ease;
+  cursor: default;
+}
+
+.prepared-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.prepared-card-done {
+  border-color: rgba(16, 185, 129, 0.25) !important;
+  background: rgba(16, 185, 129, 0.04) !important;
+}
+
+.prepared-card-done:hover {
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+.prepared-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.prepared-card-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  line-height: 1.3;
+  flex: 1;
+}
+
+.prepared-card-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.prepared-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+}
+
+.prepared-stat-label {
+  color: var(--color-text-muted);
+}
+
+.prepared-stat-value {
+  font-weight: 600;
+  color: #c7d2fe;
+}
+
+.prepared-card-date {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-top: 0.1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 0.5rem;
 }

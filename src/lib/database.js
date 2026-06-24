@@ -142,7 +142,8 @@ export async function getReadyOrders() {
   const { data, error } = await supabase
     .from('ready_orders')
     .select(`
-      id, name, pipe_length, pipe_weight, status, created_at,
+      id, name, pipe_length, pipe_weight, status, created_at, order_id,
+      orders (customer_name, status),
       ready_order_rolls (id, weight)
     `)
     .order('created_at', { ascending: false });
@@ -150,17 +151,18 @@ export async function getReadyOrders() {
   return { data, error: null };
 }
 
-export async function createReadyOrder(name) {
+export async function createReadyOrder(name, orderId = null) {
   const { valid, missing } = validateEnv();
   if (!valid) return { data: null, error: 'Env not configured' };
   const { data, error } = await supabase
     .from('ready_orders')
-    .insert({ name })
+    .insert({ name, order_id: orderId })
     .select()
     .single();
   if (error) { debug.error(MODULE, 'createReadyOrder error', error); return { data: null, error: error.message }; }
   return { data, error: null };
 }
+
 
 export async function saveReadyOrder(orderId, { name, pipeLength, pipeWeight, rolls }) {
   const { valid, missing } = validateEnv();
@@ -609,6 +611,81 @@ export async function updatePurchaseListItem(id, updates) {
 
 export async function deletePurchaseListItem(id) {
   const { error } = await supabase.from('purchase_list_items').delete().eq('id', id);
-  if (error) { debug.error(MODULE, 'deletePurchaseListItem error', error); return { data: null, error: error.message }; }
+  if (error) { debug.error(MODULE, 'deletePurchaseListItem error', error); return { error: error.message }; }
   return { error: null };
+}
+
+// ── Orders (الطلبيات) ──────────────────────────────────────────
+
+export async function getOrders() {
+  const { valid, missing } = validateEnv();
+  if (!valid) return { data: null, error: 'Env not configured' };
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) { debug.error(MODULE, 'getOrders error', error); return { data: null, error: error.message }; }
+  return { data, error: null };
+}
+
+export async function createOrder(customerName, orderDate, details, status, createdBy) {
+  const { valid, missing } = validateEnv();
+  if (!valid) return { data: null, error: 'Env not configured' };
+  const { data, error } = await supabase
+    .from('orders')
+    .insert({
+      customer_name: customerName,
+      order_date: orderDate || new Date().toISOString().split('T')[0],
+      details: details || null,
+      status: status || 'pending',
+      created_by: createdBy || null
+    })
+    .select()
+    .single();
+  if (error) { debug.error(MODULE, 'createOrder error', error); return { data: null, error: error.message }; }
+  return { data, error: null };
+}
+
+export async function updateOrder(id, updates) {
+  const { valid, missing } = validateEnv();
+  if (!valid) return { error: 'Env not configured' };
+  const { error } = await supabase
+    .from('orders')
+    .update(updates)
+    .eq('id', id);
+  if (error) { debug.error(MODULE, 'updateOrder error', error); return { error: error.message }; }
+  return { error: null };
+}
+
+export async function deleteOrder(id) {
+  const { valid, missing } = validateEnv();
+  if (!valid) return { error: 'Env not configured' };
+  const { error } = await supabase
+    .from('orders')
+    .delete()
+    .eq('id', id);
+  if (error) { debug.error(MODULE, 'deleteOrder error', error); return { error: error.message }; }
+  return { error: null };
+}
+
+/**
+ * Inserts comprehensive order form data linked to a base order.
+ * @param {number} orderId - The ID of the base order.
+ * @param {object} formData - Object containing all order form fields.
+ */
+export async function createFullOrder(orderId, formData) {
+  const { valid, missing } = validateEnv();
+  if (!valid) return { data: null, error: 'Env not configured' };
+  if (!orderId) return { data: null, error: 'Missing orderId' };
+  const payload = { ...formData, order_id: orderId };
+  const { data, error } = await supabase
+    .from('order_forms')
+    .insert(payload)
+    .select()
+    .single();
+  if (error) {
+    debug.error(MODULE, 'createFullOrder error', error);
+    return { data: null, error: error.message };
+  }
+  return { data, error: null };
 }
