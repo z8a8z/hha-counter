@@ -102,11 +102,30 @@ CREATE TABLE IF NOT EXISTS public.app_users (
 ALTER TABLE public.app_users ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Enable all operations for public" ON public.app_users FOR ALL USING (true) WITH CHECK (true);
 
--- إدراج حساب المدير الافتراضي (اسم المستخدم: admin / كلمة المرور: 0878)
--- كلمة المرور مشفرة هنا بنظام SHA-256
+-- إدراج حساب المدير الافتراضي وحساب المطور الافتراضي
+-- كلمة المرور مشفرة هنا بنظام SHA-256 (كلمة المرور لكلا الحسابين هي: 0878)
 INSERT INTO public.app_users (username, password, role)
-VALUES ('admin', 'f4c0cea75a69f325f85fa6c273d3fae5d0caafa7edd774881d64ed664f3cefeb', 'admin')
+VALUES 
+  ('admin', 'f4c0cea75a69f325f85fa6c273d3fae5d0caafa7edd774881d64ed664f3cefeb', 'admin'),
+  ('developer', 'f4c0cea75a69f325f85fa6c273d3fae5d0caafa7edd774881d64ed664f3cefeb', 'developer')
 ON CONFLICT (username) DO NOTHING;
+
+-- 3. إنشاء جدول صلاحيات الأدوار
+CREATE TABLE IF NOT EXISTS public.role_permissions (
+  role text PRIMARY KEY,
+  allowed_tabs text[] NOT NULL DEFAULT '{}'
+);
+
+-- تفعيل سياسات الحماية لجدول الصلاحيات
+ALTER TABLE public.role_permissions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable all operations for role_permissions" ON public.role_permissions FOR ALL USING (true) WITH CHECK (true);
+
+-- إدراج الصلاحيات الافتراضية
+INSERT INTO public.role_permissions (role, allowed_tabs) VALUES
+  ('admin', '{"counter", "purchases", "ready", "orders", "withdraw", "damaged", "storage", "report"}'),
+  ('accountant', '{"purchases", "storage", "report"}'),
+  ('user', '{"counter", "ready", "orders"}')
+ON CONFLICT (role) DO UPDATE SET allowed_tabs = EXCLUDED.allowed_tabs;
 ```
 4. اضغط على زر **Run** لتنفيذ السكربت.
 
@@ -132,10 +151,14 @@ npm run dev
 
 ---
 
-## بيانات الدخول الافتراضية للمدير
-* **اسم المستخدم:** `admin`
-* **كلمة المرور:** `0878`
-* *تنويه: يمكن للمدير تعديل كلمة المرور أو إضافة حسابات مستخدمين إضافيين في أي وقت من خلال قسم "المستخدمين" في صفحة الإعدادات.*
+## بيانات الدخول الافتراضية
+* **حساب المطور (Developer):**
+  * **اسم المستخدم:** `developer`
+  * **كلمة المرور:** `0878`
+* **حساب المدير (Admin):**
+  * **اسم المستخدم:** `admin`
+  * **كلمة المرور:** `0878`
+* *تنويه: يمكن للمطور والمدير إدارة الحسابات وتعديل كلمات المرور أو الأدوار في أي وقت من خلال صفحة الإعدادات. المطور هو الوحيد الذي يملك صلاحية تعديل صلاحيات رؤية التبويبات (Permissions).*
 
 ---
 

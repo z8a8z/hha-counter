@@ -169,12 +169,12 @@ export const PrintTemplates = {
               <td>${jobTypes}</td>
             </tr>
             <tr>
-              <th>الكمية المطلوبة (كغم)</th>
-              <td>${formDetails.weight_kg || '0'} كغم</td>
+              <th>الكمية المطلوبة (kg)</th>
+              <td>${formDetails.weight_kg || '0'} kg</td>
             </tr>
             <tr>
               <th>أبعاد المنتج (طول × عرض)</th>
-              <td>${formDetails.production_length || '0'} مم × ${formDetails.production_width || '0'} مم</td>
+              <td>${formDetails.production_length || '0'} mm × ${formDetails.production_width || '0'} mm</td>
             </tr>
             <tr>
               <th>الطباعة والفيلم</th>
@@ -187,15 +187,15 @@ export const PrintTemplates = {
             </tr>
             <tr>
               <th>كمية الطبع / قياس المواد</th>
-              <td>كمية: ${formDetails.print_quantity || '0'} | قياس المواد: ${formDetails.material_measure || '0'} مم</td>
+              <td>كمية: ${formDetails.print_quantity || '0'} | قياس المواد: ${formDetails.material_measure || '0'} mm</td>
             </tr>
             <tr>
               <th>اللامنيشن والغراء</th>
               <td>
                 الصمغ: ${formDetails.glue_type || '—'} |
                 اللامنيشن: ${formDetails.lamination_needed ? 'نعم' : 'لا'}
-                ${formDetails.lamination_mat1 ? `<br>• مادة 1: ${formDetails.lamination_mat1} (${formDetails.lamination_meas1} مم، ${formDetails.lamination_mic1} Mic)` : ''}
-                ${formDetails.lamination_mat2 ? `<br>• مادة 2: ${formDetails.lamination_mat2} (${formDetails.lamination_meas2} مم، ${formDetails.lamination_mic2} Mic)` : ''}
+                ${formDetails.lamination_mat1 ? `<br>• مادة 1: ${formDetails.lamination_mat1} (${formDetails.lamination_meas1} mm، ${formDetails.lamination_mic1} Mic)` : ''}
+                ${formDetails.lamination_mat2 ? `<br>• مادة 2: ${formDetails.lamination_mat2} (${formDetails.lamination_meas2} mm， ${formDetails.lamination_mic2} Mic)` : ''}
               </td>
             </tr>
             <tr>
@@ -203,7 +203,7 @@ export const PrintTemplates = {
               <td>
                 تقطيع: ${formDetails.cutting_needed ? 'نعم' : 'لا'} | 
                 تغليف: ${formDetails.packaging_needed ? 'نعم' : 'لا'} | 
-                اللف: شكل ${formDetails.wrap_shape || '—'} (قطر ${formDetails.wrap_diameter || '0'} مم، وزن ${formDetails.wrap_weight || '0'} كجم)
+                اللف: شكل ${formDetails.wrap_shape || '—'} (قطر ${formDetails.wrap_diameter || '0'} mm، وزن ${formDetails.wrap_weight || '0'} kg)
               </td>
             </tr>
             <tr>
@@ -373,12 +373,12 @@ export const PrintTemplates = {
               <td><strong>${jobTypes}</strong></td>
             </tr>
             <tr>
-              <th>الكمية المطلوبة للإنتاج (كغم)</th>
-              <td><strong>${formDetails.weight_kg || '0'} كغم</strong></td>
+              <th>الكمية المطلوبة للإنتاج (kg)</th>
+              <td><strong>${formDetails.weight_kg || '0'} kg</strong></td>
             </tr>
             <tr>
               <th>قياسات الكيس المعتمدة</th>
-              <td><span style="font-size: 12pt;"><strong>طول: ${formDetails.production_length || '0'} مم × عرض: ${formDetails.production_width || '0'} مم</strong></span></td>
+              <td><span style="font-size: 12pt;"><strong>طول: ${formDetails.production_length || '0'} mm × عرض: ${formDetails.production_width || '0'} mm</strong></span></td>
             </tr>
             <tr>
               <th>مصدر التصميم والكليشة</th>
@@ -398,15 +398,15 @@ export const PrintTemplates = {
             </tr>
             <tr>
               <th>كمية الطبع / قياس المواد</th>
-              <td>الكمية: ${formDetails.print_quantity || '0'} | قياس المواد: ${formDetails.material_measure || '0'} مم</td>
+              <td>الكمية: ${formDetails.print_quantity || '0'} | قياس المواد: ${formDetails.material_measure || '0'} mm</td>
             </tr>
             <tr>
               <th>اللامنيشن والغراء الفني</th>
               <td>
                 الصمغ: ${formDetails.glue_type || '—'} |
                 اللامنيشن: <strong>${formDetails.lamination_needed ? 'نعم - يحتاج' : 'لا يحتاج'}</strong>
-                ${formDetails.lamination_mat1 ? `<br>• مادة 1: ${formDetails.lamination_mat1} (${formDetails.lamination_meas1} مم، ${formDetails.lamination_mic1} Mic)` : ''}
-                ${formDetails.lamination_mat2 ? `<br>• مادة 2: ${formDetails.lamination_mat2} (${formDetails.lamination_meas2} مم، ${formDetails.lamination_mic2} Mic)` : ''}
+                ${formDetails.lamination_mat1 ? `<br>• مادة 1: ${formDetails.lamination_mat1} (${formDetails.lamination_meas1} mm، ${formDetails.lamination_mic1} Mic)` : ''}
+                ${formDetails.lamination_mat2 ? `<br>• مادة 2: ${formDetails.lamination_mat2} (${formDetails.lamination_meas2} mm، ${formDetails.lamination_mic2} Mic)` : ''}
               </td>
             </tr>
             <tr>
@@ -415,7 +415,7 @@ export const PrintTemplates = {
             </tr>
             <tr>
               <th>مواصفات بكرة اللف النهائية</th>
-              <td>شكل اللف: <strong>${formDetails.wrap_shape || '—'}</strong> | قطر: ${formDetails.wrap_diameter || '0'} مم | وزن: ${formDetails.wrap_weight || '0'} كجم</td>
+              <td>شكل اللف: <strong>${formDetails.wrap_shape || '—'}</strong> | قطر: ${formDetails.wrap_diameter || '0'} mm | وزن: ${formDetails.wrap_weight || '0'} kg</td>
             </tr>
             <tr>
               <th>تعليمات التسليم للورشة</th>
@@ -443,11 +443,11 @@ export const PrintTemplates = {
     const o = { ...defaultSettings.prepCard, ...customSettings.prepCard };
     
     const rolls = readyOrder.ready_order_rolls || [];
-    const rollWeights = rolls.map(r => parseFloat(r.weight) || 0);
+    const rollWeights = rolls.map(r => (parseFloat(r.weight) || 0) / 1000);
     
     // Calculate weights
     const grossWeight = rollWeights.reduce((sum, w) => sum + w, 0);
-    const pipeWeight = parseFloat(readyOrder.pipe_weight) || 0;
+    const pipeWeight = (parseFloat(readyOrder.pipe_weight) || 0) / 1000;
     const netWeight = grossWeight - (rolls.length * pipeWeight);
     const formattedDate = new Date(readyOrder.created_at || new Date()).toLocaleDateString('ar-EG');
 
@@ -593,9 +593,9 @@ export const PrintTemplates = {
             <table class="grid-table">
               <thead>
                 <tr>
-                  <th>أوزان العمود 1 (كجم)</th>
-                  <th>أوزان العمود 2 (كجم)</th>
-                  <th>أوزان العمود 3 (كجم)</th>
+                  <th>أوزان العمود 1 (kg)</th>
+                  <th>أوزان العمود 2 (kg)</th>
+                  <th>أوزان العمود 3 (kg)</th>
                 </tr>
               </thead>
               <tbody>
@@ -605,12 +605,12 @@ export const PrintTemplates = {
             
             <div class="totals-box">
               <div class="totals-grid">
-                <div><strong>الوزن الكلي:</strong> ${grossWeight.toFixed(2)} كجم</div>
-                <div><strong>طول الماسورة:</strong> ${readyOrder.pipe_length || '0'} سم</div>
-                <div><strong>وزن الماسورة:</strong> ${pipeWeight.toFixed(3)} كجم</div>
+                <div><strong>الوزن الكلي:</strong> ${grossWeight.toFixed(2)} kg</div>
+                <div><strong>طول الماسورة:</strong> ${readyOrder.pipe_length || '0'} cm</div>
+                <div><strong>وزن الماسورة:</strong> ${pipeWeight.toFixed(3)} kg</div>
                 <div><strong>عدد الرولات:</strong> ${rolls.length} رول</div>
                 <div class="totals-highlight">
-                  الوزن الصافي الكلي: ${netWeight.toFixed(2)} كجم
+                  الوزن الصافي الكلي: ${netWeight.toFixed(2)} kg
                 </div>
               </div>
             </div>

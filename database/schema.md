@@ -295,3 +295,12 @@
 | `settings` | `jsonb` |  |
 | `updated_at` | `timestamptz` |  |
 
+## Table `role_permissions`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `role` | `text` | Primary |
+| `allowed_tabs` | `_text` |  |
+

@@ -104,7 +104,7 @@ export default function StoragePipes() {
                 <select value={selectedLength} onChange={(e) => setSelectedLength(e.target.value)} required>
                   <option value="">-- اختر الطول --</option>
                   {lengths.map((l) => (
-                    <option key={l.id} value={l.id}>{l.length} سم</option>
+                    <option key={l.id} value={l.id}>{l.length} cm</option>
                   ))}
                 </select>
               </div>
@@ -121,16 +121,16 @@ export default function StoragePipes() {
           </div>
 
           <div className="sidebar-card">
-            <h4>إدارة الأطوال (سم)</h4>
+            <h4>إدارة الأطوال (cm)</h4>
             <div className="lookup-form-row">
-              <input type="text" inputMode="decimal" placeholder="طول جديد (سم)" value={newLength} onChange={(e) => setNewLength(e.target.value.replace(/[^0-9.]/g, ''))} />
+              <input type="text" inputMode="decimal" placeholder="طول جديد (cm)" value={newLength} onChange={(e) => setNewLength(e.target.value.replace(/[^0-9.]/g, ''))} />
               <button className="btn btn-primary btn-small" onClick={handleAddLength}>+</button>
             </div>
             <ul className="lookup-list">
               {lengths.map((l) => (
                 <li key={l.id}>
-                  <span>{l.length} سم</span>
-                  <button className="btn-delete-mini" onClick={() => deleteLookup(l.id, `حذف الطول "${l.length} سم"؟`)} title="حذف">x</button>
+                  <span>{l.length} cm</span>
+                  <button className="btn-delete-mini" onClick={() => deleteLookup(l.id, `حذف الطول "${l.length} cm"؟`)} title="حذف">x</button>
                 </li>
               ))}
             </ul>

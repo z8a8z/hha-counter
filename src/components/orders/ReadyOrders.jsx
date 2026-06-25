@@ -492,10 +492,10 @@ export default function ReadyOrders() {
                           value={roll.weight}
                           onChange={(e) => handleRollWeightChange(roll.id, e.target.value)}
                           onFocus={makeRollFocusHandler(roll, index)}
-                          placeholder="الوزن (غرام)"
+                          placeholder="الوزن (g)"
                           disabled={loading || isViewOnly}
                         />
-                        <span className="unit">غ</span>
+                        <span className="unit">g</span>
                       </div>
                       {!isViewOnly && (
                         <button
@@ -519,7 +519,7 @@ export default function ReadyOrders() {
               <div className="info-grid">
                 <div className="info-stat">
                   <span className="stat-label">إجمالي الوزن (القائم)</span>
-                  <span className="stat-value">{grossWeight.toFixed(2)} غ</span>
+                  <span className="stat-value">{(grossWeight / 1000).toFixed(2)} kg</span>
                 </div>
                 <div className="info-stat">
                   <span className="stat-label">عدد الرولات</span>
@@ -528,7 +528,7 @@ export default function ReadyOrders() {
 
                 <div className="info-input-group">
                   <div className="form-group">
-                    <label htmlFor="pipe-length">طول الماسورة (سم)</label>
+                    <label htmlFor="pipe-length">طول الماسورة (cm)</label>
                     <input
                       id="pipe-length"
                       ref={pipeLengthRef}
@@ -541,7 +541,7 @@ export default function ReadyOrders() {
                     />
                   </div>
                   <div className="form-group">
-                    <label htmlFor="pipe-weight">وزن الماسورة (غرام)</label>
+                    <label htmlFor="pipe-weight">وزن الماسورة (g)</label>
                     <input
                       id="pipe-weight"
                       ref={pipeWeightRef}
@@ -557,7 +557,7 @@ export default function ReadyOrders() {
 
                 <div className="info-stat net-weight-stat">
                   <span className="stat-label">الوزن الصافي</span>
-                  <span className="stat-value">{netWeight.toFixed(2)} غ</span>
+                  <span className="stat-value">{(netWeight / 1000).toFixed(2)} kg</span>
                 </div>
               </div>
 
@@ -567,9 +567,6 @@ export default function ReadyOrders() {
                     {loading ? 'جاري الحفظ...' : 'حفظ التغييرات'}
                   </button>
                 )}
-                <button className="btn btn-outline" onClick={handlePrint}>
-                  طباعة الفاتورة 🖨️
-                </button>
                 {!isViewOnly && (
                   <button className="btn btn-ready" onClick={handleMarkReady} disabled={loading}>
                     {loading ? 'جاري...' : 'جاهز ✓'}
@@ -638,15 +635,27 @@ export default function ReadyOrders() {
                 >
                   <div className="order-card-header">
                     <h3>{order.name}</h3>
-                    <button
-                      type="button"
-                      className="card-print-btn"
-                      onClick={(e) => handlePrint(order, e)}
-                      title="طباعة بطاقة التجهيز"
-                      disabled={loading}
-                    >
-                      🖨️
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.35rem' }}>
+                      <button
+                        type="button"
+                        className="card-print-btn"
+                        onClick={(e) => handlePrint(order, e)}
+                        title="طباعة بطاقة التجهيز"
+                        disabled={loading}
+                      >
+                        🖨️
+                      </button>
+                      <button
+                        type="button"
+                        className="card-print-btn"
+                        onClick={(e) => handleDeleteOrder(order.id, order.name, e)}
+                        title="حذف بطاقة التجهيز"
+                        disabled={loading}
+                        style={{ color: '#f87171' }}
+                      >
+                        🗑️
+                      </button>
+                    </div>
                   </div>
 
                   {order.orders && (
@@ -675,7 +684,7 @@ export default function ReadyOrders() {
                     </div>
                     <div className="card-stat">
                       <span>الوزن الصافي:</span>
-                      <strong>{netWeight.toFixed(2)} غ</strong>
+                      <strong>{(netWeight / 1000).toFixed(2)} kg</strong>
                     </div>
                     <div className="card-date">
                       <span>تاريخ الإنشاء:</span>

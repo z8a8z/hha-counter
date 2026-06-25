@@ -22,7 +22,7 @@ export default function Header() {
         {/* Desktop Navigation */}
         <nav className="header-nav" style={{ visibility: user ? 'visible' : 'hidden' }}>
           <Link to="/" className="nav-link">الرئيسية</Link>
-          {user?.role === 'admin' && (
+          {(user?.role === 'admin' || user?.role === 'developer') && (
             <Link to="/settings" className="nav-link">الإعدادات</Link>
           )}
           <button onClick={handleLogout} className="btn btn-outline">
@@ -54,7 +54,7 @@ export default function Header() {
         </div>
         <nav className="drawer-nav">
           <Link to="/" className="nav-link" onClick={() => setIsDrawerOpen(false)}>الرئيسية</Link>
-          {user?.role === 'admin' && (
+          {(user?.role === 'admin' || user?.role === 'developer') && (
             <Link to="/settings" className="nav-link" onClick={() => setIsDrawerOpen(false)}>الإعدادات</Link>
           )}
           <button 

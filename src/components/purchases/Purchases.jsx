@@ -418,9 +418,9 @@ function PurchaseListDetail({ listId, lists, offices, onBack, onConfirm }) {
 
   const getQuantityLabel = () => {
     switch (itemType) {
-      case 'roll': return 'الوزن (كجم)';
+      case 'roll': return 'الوزن (kg)';
       case 'ink': return 'عدد البراميل';
-      case 'liquid': return 'الكمية (لتر)';
+      case 'liquid': return 'الكمية (L)';
       case 'pipe': return 'الكمية';
       default: return 'الكمية';
     }
@@ -511,10 +511,10 @@ function PurchaseListDetail({ listId, lists, offices, onBack, onConfirm }) {
                 <select value={variant1} onChange={(e) => setVariant1(e.target.value)} required>
                   <option value="">-- اختر --</option>
                   {itemType === 'roll' && widths.map((w) => (
-                    <option key={w.id} value={w.id}>{w.width} سم</option>
+                    <option key={w.id} value={w.id}>{w.width} cm</option>
                   ))}
                   {itemType === 'pipe' && pipeLengths.map((pl) => (
-                    <option key={pl.id} value={pl.id}>{pl.length} سم</option>
+                    <option key={pl.id} value={pl.id}>{pl.length} cm</option>
                   ))}
                   {itemType === 'liquid' && liquidTypes.map((lt) => (
                     <option key={lt.id} value={lt.id}>{lt.name}</option>
@@ -555,11 +555,11 @@ function PurchaseListDetail({ listId, lists, offices, onBack, onConfirm }) {
               {/* Ink barrel weight selector */}
               {itemType === 'ink' && (
                 <div className="form-group">
-                  <label>وزن البرميل (كجم)</label>
+                  <label>وزن البرميل (kg)</label>
                   <select value={weightId} onChange={(e) => setWeightId(e.target.value)} required>
                     <option value="">-- اختر --</option>
                     {inkWeights.map((iw) => (
-                      <option key={iw.id} value={iw.id}>{iw.weight} كجم</option>
+                      <option key={iw.id} value={iw.id}>{iw.weight} kg</option>
                     ))}
                   </select>
                 </div>

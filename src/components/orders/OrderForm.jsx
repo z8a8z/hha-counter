@@ -164,8 +164,8 @@ export default function OrderForm({ onCancel, onSuccess }) {
   };
 
   return (
-    <div className="form-overlay" onClick={onCancel}>
-      <form className="form-modal" onClick={e => e.stopPropagation()} onSubmit={handleSubmit}>
+    <div className="form-overlay">
+      <form className="form-modal" onSubmit={handleSubmit}>
         <div className="form-modal-header">
           <h3>استمارة الطلبيات</h3>
           {errorMsg && <div className="error-banner">{errorMsg}</div>}
@@ -218,7 +218,7 @@ export default function OrderForm({ onCancel, onSuccess }) {
                 <input type="text" value={sector} onChange={e => setSector(e.target.value)} />
               </div>
               <div className="form-group">
-                <label>كمية [كغم]</label>
+                <label>كمية (kg)</label>
                 <input type="number" min="0" value={quantityKg} onChange={e => setQuantityKg(e.target.value)} required />
               </div>
               <div className="form-group" style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'flex-end', height: '100%' }}>
@@ -313,7 +313,7 @@ export default function OrderForm({ onCancel, onSuccess }) {
                 </select>
               </div>
               <div className="form-group">
-                <label>MIC (mm)</label>
+                <label>MIC (micron)</label>
                 <input type="number" min="0" value={mic} onChange={e => setMic(e.target.value)} required />
               </div>
             </div>
@@ -362,7 +362,7 @@ export default function OrderForm({ onCancel, onSuccess }) {
                     <input type="number" min="0" value={lamMeas1} onChange={e => setLamMeas1(e.target.value)} disabled={!lamMat1} />
                   </div>
                   <div className="form-group">
-                    <label>MIC 1 (mm)</label>
+                    <label>MIC 1 (micron)</label>
                     <input type="number" min="0" value={lamMic1} onChange={e => setLamMic1(e.target.value)} disabled={!lamMat1} />
                   </div>
                 </div>
@@ -389,7 +389,7 @@ export default function OrderForm({ onCancel, onSuccess }) {
                     <input type="number" min="0" value={lamMeas2} onChange={e => setLamMeas2(e.target.value)} disabled={!lamMat2} />
                   </div>
                   <div className="form-group">
-                    <label>MIC 2 (mm)</label>
+                    <label>MIC 2 (micron)</label>
                     <input type="number" min="0" value={lamMic2} onChange={e => setLamMic2(e.target.value)} disabled={!lamMat2} />
                   </div>
                 </div>
@@ -416,7 +416,7 @@ export default function OrderForm({ onCancel, onSuccess }) {
                     <input type="number" min="0" value={lamMeas3} onChange={e => setLamMeas3(e.target.value)} disabled={!lamMat3} />
                   </div>
                   <div className="form-group">
-                    <label>MIC 3 (mm)</label>
+                    <label>MIC 3 (micron)</label>
                     <input type="number" min="0" value={lamMic3} onChange={e => setLamMic3(e.target.value)} disabled={!lamMat3} />
                   </div>
                 </div>
@@ -507,7 +507,6 @@ export default function OrderForm({ onCancel, onSuccess }) {
           <div className="modal-actions">
             <button type="submit" className="btn btn-primary">حفظ الطلبية</button>
             <button type="button" className="btn btn-outline" onClick={onCancel}>إلغاء</button>
-            <button type="button" className="btn btn-secondary" disabled>طباعة (قيد التطوير)</button>
           </div>
         </div>
       </form>

@@ -154,7 +154,7 @@ export default function StorageRolls() {
         <div className="stat-item">
           <span className="stat-label">الوزن الإجمالي</span>
           <span className="stat-value">{totalWeight.toFixed(2)}</span>
-          <span className="stat-unit">كجم</span>
+          <span className="stat-unit">kg</span>
         </div>
       </div>
 
@@ -172,7 +172,7 @@ export default function StorageRolls() {
                     <th>#</th>
                     <th>العرض</th>
                     <th>النوع</th>
-                    <th>الوزن (كجم)</th>
+                    <th>الوزن (kg)</th>
                     <th>ملاحظات</th>
                     <th></th>
                   </tr>
@@ -241,7 +241,7 @@ export default function StorageRolls() {
                 <select value={selectedWidth} onChange={(e) => setSelectedWidth(e.target.value)} required>
                   <option value="">-- اختر العرض --</option>
                   {widths.map((w) => (
-                    <option key={w.id} value={w.id}>{w.width} سم</option>
+                    <option key={w.id} value={w.id}>{w.width} cm</option>
                   ))}
                 </select>
               </div>
@@ -255,7 +255,7 @@ export default function StorageRolls() {
                 </select>
               </div>
               <div className="form-group">
-                <label>الوزن (كجم)</label>
+                <label>الوزن (kg)</label>
                 <input type="text" inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value.replace(/[^0-9.]/g, ''))} required />
               </div>
               <div className="form-group">
@@ -268,15 +268,15 @@ export default function StorageRolls() {
 
           {/* Manage Widths */}
           <div className="sidebar-card">
-            <h4>إدارة العروض (سم)</h4>
+            <h4>إدارة العروض (cm)</h4>
             <div className="lookup-form-row">
-              <input type="text" inputMode="decimal" placeholder="عرض (سم)" value={newWidth} onChange={(e) => setNewWidth(e.target.value.replace(/[^0-9.]/g, ''))} className="small-input" />
+              <input type="text" inputMode="decimal" placeholder="عرض (cm)" value={newWidth} onChange={(e) => setNewWidth(e.target.value.replace(/[^0-9.]/g, ''))} className="small-input" />
               <button className="btn btn-primary btn-small" onClick={handleAddWidth}>+</button>
             </div>
             <ul className="lookup-list">
               {widths.map((w) => (
                 <li key={w.id}>
-                  <span>{w.width} سم</span>
+                  <span>{w.width} cm</span>
                   <button className="btn-delete-mini" onClick={() => handleDeleteWidth(w.id)} title="حذف">x</button>
                 </li>
               ))}

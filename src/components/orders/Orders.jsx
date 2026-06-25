@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getOrders, createOrder, createFullOrder, updateOrder, deleteOrder, getReadyOrders, getOrderForm, getPrintSettings } from '../../lib/database.js';
+import { getOrders, createOrder, createFullOrder, updateOrder, deleteOrder, getReadyOrders, getOrderForm, getPrintSettings, deleteReadyOrder } from '../../lib/database.js';
 import OrderForm from './OrderForm.jsx';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { usePrint } from '../../hooks/usePrint.js';
@@ -23,20 +23,46 @@ const READY_STATUS_LABELS = {
 };
 
 /* ─── Prepared Card (read-only) ─────────────────────────────── */
-function PreparedCard({ readyOrder }) {
+function PreparedCard({ readyOrder, onDelete }) {
   const rolls = readyOrder.ready_order_rolls || [];
   const grossWeight = rolls.reduce((sum, r) => sum + (parseFloat(r.weight) || 0), 0);
   const pipeWeight = parseFloat(readyOrder.pipe_weight) || 0;
-  const netWeight = grossWeight - (rolls.length * pipeWeight);
+  const netWeight = (grossWeight - (rolls.length * pipeWeight)) / 1000;
   const isReady = readyOrder.status === 'ready';
 
   return (
     <div className={`prepared-card ${isReady ? 'prepared-card-done' : ''}`}>
       <div className="prepared-card-header">
         <span className="prepared-card-name">{readyOrder.name}</span>
-        <span className={`status-badge ${isReady ? 'status-badge-ready' : 'status-badge-preparing'}`}>
-          {READY_STATUS_LABELS[readyOrder.status] || READY_STATUS_LABELS.preparing}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <span className={`status-badge ${isReady ? 'status-badge-ready' : 'status-badge-preparing'}`}>
+            {READY_STATUS_LABELS[readyOrder.status] || READY_STATUS_LABELS.preparing}
+          </span>
+          {onDelete && (
+            <button
+              type="button"
+              className="card-delete-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(readyOrder.id, readyOrder.name);
+              }}
+              title="حذف التجهيز"
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                padding: '2px 4px',
+                borderRadius: '4px',
+                transition: 'background 0.15s'
+              }}
+              onMouseEnter={(e) => e.target.style.background = 'rgba(239, 68, 68, 0.15)'}
+              onMouseLeave={(e) => e.target.style.background = 'none'}
+            >
+              🗑️
+            </button>
+          )}
+        </div>
       </div>
       <div className="prepared-card-stats">
         <div className="prepared-stat">
@@ -45,12 +71,12 @@ function PreparedCard({ readyOrder }) {
         </div>
         <div className="prepared-stat">
           <span className="prepared-stat-label">الوزن الصافي</span>
-          <span className="prepared-stat-value">{netWeight.toFixed(2)} كغ</span>
+          <span className="prepared-stat-value">{netWeight.toFixed(2)} kg</span>
         </div>
         {readyOrder.pipe_length > 0 && (
           <div className="prepared-stat">
             <span className="prepared-stat-label">طول الماسورة</span>
-            <span className="prepared-stat-value">{readyOrder.pipe_length} سم</span>
+            <span className="prepared-stat-value">{readyOrder.pipe_length} cm</span>
           </div>
         )}
       </div>
@@ -212,6 +238,24 @@ export default function Orders() {
     }
   };
 
+  const handleDeleteReadyOrder = async (id, name) => {
+    if (!window.confirm(`هل أنت متأكد من حذف التجهيز "${name}"؟`)) {
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    const { error: delErr } = await deleteReadyOrder(id);
+    setLoading(false);
+
+    if (delErr) {
+      setError('فشل حذف التجهيز: ' + delErr);
+    } else {
+      setSuccessMsg('تم حذف التجهيز بنجاح');
+      fetchAll();
+    }
+  };
+
   const toggleExpandedOrder = (orderId) => {
     setExpandedOrderId(prev => prev === orderId ? null : orderId);
   };
@@ -364,9 +408,35 @@ export default function Orders() {
                           <span className="creator-badge">👤 {order.created_by || 'مجهول'}</span>
                         </td>
                         <td>
-                          <span className={`status-badge ${STATUS_CLASSES[order.status]}`}>
-                            {STATUS_LABELS[order.status]}
-                          </span>
+                          <select
+                            className={`status-badge ${STATUS_CLASSES[order.status]}`}
+                            value={order.status}
+                            onChange={async (e) => {
+                              const newStatus = e.target.value;
+                              setLoading(true);
+                              const { error: err } = await updateOrder(order.id, { status: newStatus });
+                              setLoading(false);
+                              if (err) {
+                                setError('فشل تحديث حالة الطلبية: ' + err);
+                              } else {
+                                setSuccessMsg('تم تحديث حالة الطلبية بنجاح');
+                                fetchAll();
+                              }
+                            }}
+                            style={{
+                              border: 'none',
+                              outline: 'none',
+                              cursor: 'pointer',
+                              padding: '0.2rem 0.4rem 0.2rem 0.6rem',
+                              fontFamily: 'inherit',
+                              fontSize: '0.72rem',
+                              fontWeight: '600'
+                            }}
+                          >
+                            <option value="pending" style={{ background: '#1e1b4b', color: '#fbbf24' }}>قيد الانتظار</option>
+                            <option value="completed" style={{ background: '#1e1b4b', color: '#34d399' }}>مكتمل</option>
+                            <option value="cancelled" style={{ background: '#1e1b4b', color: '#f87171' }}>ملغي</option>
+                          </select>
                         </td>
                         <td>
                           <div className="table-actions">
@@ -432,7 +502,7 @@ export default function Orders() {
                               </div>
                               <div className="prepared-canvas-grid">
                                 {linked.map(ro => (
-                                  <PreparedCard key={ro.id} readyOrder={ro} />
+                                  <PreparedCard key={ro.id} readyOrder={ro} onDelete={handleDeleteReadyOrder} />
                                 ))}
                               </div>
                             </div>

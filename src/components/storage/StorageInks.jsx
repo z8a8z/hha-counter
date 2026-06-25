@@ -130,7 +130,7 @@ export default function StorageInks() {
         <div className="stat-item">
           <span className="stat-label">الوزن الإجمالي</span>
           <span className="stat-value">{totalKg.toFixed(2)}</span>
-          <span className="stat-unit">كجم</span>
+          <span className="stat-unit">kg</span>
         </div>
       </div>
 
@@ -146,7 +146,7 @@ export default function StorageInks() {
                   <tr>
                     <th>الشركة</th>
                     <th>اللون</th>
-                    <th>الكمية (كجم)</th>
+                    <th>الكمية (kg)</th>
                     <th>ملاحظات</th>
                     <th></th>
                   </tr>
@@ -195,7 +195,7 @@ export default function StorageInks() {
                 </select>
               </div>
               <div className="form-group">
-                <label>الكمية (كجم)</label>
+                <label>الكمية (kg)</label>
                 <input type="text" inputMode="decimal" value={quantity} onChange={(e) => setQuantity(e.target.value.replace(/[^0-9.]/g, ''))} />
               </div>
               <div className="form-group">
@@ -239,15 +239,15 @@ export default function StorageInks() {
           </div>
 
           <div className="sidebar-card">
-            <h4>إدارة أوزان البراميل (كجم)</h4>
+            <h4>إدارة أوزان البراميل (kg)</h4>
             <div className="lookup-form-row">
-              <input type="text" inputMode="decimal" placeholder="وزن (كجم)" value={newWeight} onChange={(e) => setNewWeight(e.target.value.replace(/[^0-9.]/g, ''))} />
+              <input type="text" inputMode="decimal" placeholder="وزن (kg)" value={newWeight} onChange={(e) => setNewWeight(e.target.value.replace(/[^0-9.]/g, ''))} />
               <button className="btn btn-primary btn-small" onClick={handleAddWeight}>+</button>
             </div>
             <ul className="lookup-list">
               {weights.map((w) => (
                 <li key={w.id}>
-                  <span>{w.weight} كجم</span>
+                  <span>{w.weight} kg</span>
                   <button className="btn-delete-mini" onClick={() => handleDeleteWeight(w.id)} title="حذف">x</button>
                 </li>
               ))}

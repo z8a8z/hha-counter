@@ -115,7 +115,7 @@ function ViewRolls() {
                   <th>#</th>
                   <th>العرض</th>
                   <th>النوع</th>
-                  <th>الوزن (كجم)</th>
+                  <th>الوزن (kg)</th>
                   <th>ملاحظات</th>
                 </tr>
               </thead>
@@ -279,7 +279,7 @@ function ViewLiquids() {
     <div className="storage-view-entity">
       {error && <div className="error-banner">{error}</div>}
 
-      <StatsBar totalItems={activeItems.length} totalQuantity={totalQuantity.toFixed(2)} label="liter" />
+      <StatsBar totalItems={activeItems.length} totalQuantity={totalQuantity.toFixed(2)} label="L" />
 
       <div className="storage-view-panel">
         <h3>سوائل المخزن ({activeItems.length})</h3>
@@ -301,7 +301,7 @@ function ViewLiquids() {
                   <tr key={item.id}>
                     <td><strong>{item.type_name}</strong></td>
                     <td><span className="mono">{item.quantity}</span></td>
-                    <td>{item.unit}</td>
+                    <td>L</td>
                     <td className="notes-cell">{item.notes || '-'}</td>
                   </tr>
                 ))}
@@ -382,7 +382,7 @@ function ViewInks() {
                 <tr>
                   <th>الشركة</th>
                   <th>اللون</th>
-                  <th>الكمية (كجم)</th>
+                  <th>الكمية (kg)</th>
                   <th>ملاحظات</th>
                 </tr>
               </thead>

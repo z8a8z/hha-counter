@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import UserManagement from './UserManagement.jsx';
 import VariationManager from './VariationManager.jsx';
-import { getPrintSettings, savePrintSettings } from '../../lib/database.js';
+import { getPrintSettings, savePrintSettings, getRolePermissions, updateRolePermissions } from '../../lib/database.js';
 import { PrintTemplates } from '../common/PrintTemplates.js';
 
 export default function Settings() {
@@ -15,8 +15,8 @@ export default function Settings() {
     return <Navigate to="/login" replace />;
   }
 
-  // Only admins can see the settings
-  if (user.role !== 'admin') {
+  // Only admins and developers can see the settings
+  if (user.role !== 'admin' && user.role !== 'developer') {
     return (
       <div className="settings-container">
         <div className="settings-card">
@@ -29,6 +29,7 @@ export default function Settings() {
 
   const tabs = [
     { id: 'users', label: 'المستخدمين' },
+    ...(user.role === 'developer' ? [{ id: 'permissions', label: 'الصلاحيات 🔑' }] : []),
     { id: 'print_settings', label: 'إعدادات الطباعة' },
     { id: 'purchase_offices', label: 'مكاتب الشراء' },
     { id: 'roll_widths', label: 'عروض الرولات' },
@@ -59,6 +60,7 @@ export default function Settings() {
         </div>
         <div className="tab-content">
           {activeTab === 'users' && <UserManagement />}
+          {activeTab === 'permissions' && user.role === 'developer' && <PermissionsManager />}
           {activeTab === 'print_settings' && <PrintSettings />}
           {activeTab === 'purchase_offices' && <VariationManager entity="purchase_offices" />}
           {activeTab === 'roll_widths' && <VariationManager entity="roll_widths" />}
@@ -420,6 +422,155 @@ function PrintSettings() {
             className="preview-iframe"
           />
         </div>
+      </div>
+    </div>
+  );
+}
+
+function PermissionsManager() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState('');
+  const [error, setError] = useState('');
+  const [perms, setPerms] = useState({
+    admin: [],
+    accountant: [],
+    user: []
+  });
+
+  const availableTabs = [
+    { id: 'counter', label: 'العداد' },
+    { id: 'purchases', label: 'مشتريات' },
+    { id: 'ready', label: 'جاهز' },
+    { id: 'orders', label: 'الطلبيات' },
+    { id: 'withdraw', label: 'سحب' },
+    { id: 'damaged', label: 'تالف' },
+    { id: 'storage', label: 'مخزن' },
+    { id: 'report', label: 'تقرير' }
+  ];
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      const { data, error } = await getRolePermissions();
+      setLoading(false);
+      if (error) {
+        setError('فشل تحميل الصلاحيات: ' + error);
+        return;
+      }
+      if (data) {
+        const mapping = { admin: [], accountant: [], user: [] };
+        data.forEach(row => {
+          if (mapping[row.role] !== undefined) {
+            mapping[row.role] = row.allowed_tabs || [];
+          }
+        });
+        setPerms(mapping);
+      }
+    }
+    load();
+  }, []);
+
+  const handleToggle = (role, tabId) => {
+    setPerms(prev => {
+      const current = prev[role] || [];
+      let updated;
+      if (current.includes(tabId)) {
+        updated = current.filter(id => id !== tabId);
+      } else {
+        updated = [...current, tabId];
+      }
+      return { ...prev, [role]: updated };
+    });
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setError('');
+    setSuccess('');
+    let hasError = false;
+
+    for (const role of ['admin', 'accountant', 'user']) {
+      const { error: saveErr } = await updateRolePermissions(role, perms[role]);
+      if (saveErr) {
+        setError(`فشل حفظ صلاحيات ${role}: ${saveErr}`);
+        hasError = true;
+        break;
+      }
+    }
+
+    setSaving(false);
+    if (!hasError) {
+      setSuccess('تم حفظ الصلاحيات بنجاح!');
+      setTimeout(() => setSuccess(''), 3000);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        <div className="spinner" style={{ border: '4px solid rgba(255,255,255,0.1)', borderTop: '4px solid var(--accent)', borderRadius: '50%', width: '40px', height: '40px', animation: 'spin 1s linear infinite', margin: '0 auto 15px auto' }}></div>
+        <p>جاري تحميل الصلاحيات من السيرفر...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="permissions-manager" style={{ padding: '15px' }}>
+      <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>🔑 التحكم في صلاحيات الوصول للتبويبات</h3>
+      <p style={{ opacity: 0.8, marginBottom: '20px', fontSize: '0.9rem' }}>
+        بصفتك مطوراً، يمكنك تحديد الأقسام والتبويبات التي تظهر لكل دور مستخدم في النظام.
+      </p>
+
+      {success && <div className="success-banner" style={{ background: 'rgba(46, 204, 113, 0.15)', color: '#2ecc71', border: '1px solid #2ecc71', padding: '10px 15px', borderRadius: '4px', marginBottom: '15px' }}>{success}</div>}
+      {error && <div className="error-banner" style={{ background: 'rgba(231, 76, 60, 0.15)', color: '#e74c3c', border: '1px solid #e74c3c', padding: '10px 15px', borderRadius: '4px', marginBottom: '15px' }}>{error}</div>}
+
+      <div style={{ overflowX: 'auto', marginTop: '15px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
+          <thead>
+            <tr style={{ borderBottom: '2px solid var(--border)' }}>
+              <th style={{ padding: '12px' }}>الدور / القسم</th>
+              {availableTabs.map(t => (
+                <th key={t.id} style={{ padding: '12px', textAlign: 'center' }}>{t.label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              { id: 'admin', label: 'مدير (Admin)' },
+              { id: 'accountant', label: 'محاسب (Accountant)' },
+              { id: 'user', label: 'مستخدم (User)' }
+            ].map(r => (
+              <tr key={r.id} style={{ borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.01)' }}>
+                <td style={{ padding: '12px', fontWeight: 'bold' }}>{r.label}</td>
+                {availableTabs.map(t => {
+                  const isChecked = perms[r.id]?.includes(t.id);
+                  return (
+                    <td key={t.id} style={{ padding: '12px', textAlign: 'center' }}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked || false}
+                        onChange={() => handleToggle(r.id, t.id)}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                      />
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div style={{ marginTop: '2rem' }}>
+        <button 
+          onClick={handleSave} 
+          className="btn btn-primary" 
+          disabled={saving}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          {saving ? 'جاري الحفظ...' : '💾 حفظ الصلاحيات'}
+        </button>
       </div>
     </div>
   );

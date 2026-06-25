@@ -134,6 +134,32 @@ export async function updateUserPassword(userId, newPasswordHash) {
   return { error: null };
 }
 
+export async function updateUserRole(userId, newRole) {
+  const { error } = await supabase
+    .from('app_users')
+    .update({ role: newRole })
+    .eq('id', userId);
+  if (error) { debug.error(MODULE, 'updateUserRole error', error); return { error: error.message }; }
+  return { error: null };
+}
+
+export async function getRolePermissions() {
+  const { data, error } = await supabase
+    .from('role_permissions')
+    .select('role, allowed_tabs');
+  if (error) { debug.error(MODULE, 'getRolePermissions error', error); return { data: null, error: error.message }; }
+  return { data, error: null };
+}
+
+export async function updateRolePermissions(role, allowedTabs) {
+  const { error } = await supabase
+    .from('role_permissions')
+    .update({ allowed_tabs: allowedTabs })
+    .eq('role', role);
+  if (error) { debug.error(MODULE, 'updateRolePermissions error', error); return { error: error.message }; }
+  return { error: null };
+}
+
 // ── Ready Orders (جاهز) ──────────────────────────────────────
 
 export async function getReadyOrders() {

@@ -80,7 +80,7 @@ export default function StorageLiquids() {
                     <tr key={item.id}>
                       <td><strong>{item.type_name}</strong></td>
                       <td><span className="mono">{item.quantity}</span></td>
-                      <td>{item.unit}</td>
+                      <td>L</td>
                       <td className="notes-cell">{item.notes || '-'}</td>
                       <td>
                         <button
@@ -110,7 +110,7 @@ export default function StorageLiquids() {
                 </select>
               </div>
               <div className="form-group">
-                <label>الكمية (لتر)</label>
+                <label>الكمية (L)</label>
                 <input type="text" inputMode="decimal" value={quantity} onChange={(e) => setQuantity(e.target.value.replace(/[^0-9.]/g, ''))} />
               </div>
               <div className="form-group">

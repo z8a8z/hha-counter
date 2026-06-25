@@ -2466,3 +2466,44 @@ td { font-size: 0.88rem; }
   border-top: 1px solid var(--border);
   padding-top: 0.5rem;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   RECTANGLE TOGGLES (for Order Form work type toggles)
+   ══════════════════════════════════════════════════════════════ */
+
+.rect-toggle-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.rect-toggle {
+  cursor: pointer;
+  padding: 0.65rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--txt-secondary);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.2s ease;
+  user-select: none;
+  min-width: 80px;
+}
+
+.rect-toggle:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--txt-primary);
+}
+
+.rect-toggle.selected {
+  background: var(--clr-primary);
+  border-color: var(--clr-primary);
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+}

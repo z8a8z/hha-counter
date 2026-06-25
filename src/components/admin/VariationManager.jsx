@@ -138,8 +138,8 @@ function getEntityConfig(entity) {
         },
         deleteItem: deleteRollWidth,
         isNumeric: true,
-        columnLabel: 'العرض (سم)',
-        placeholder: 'عرض جديد (سم)',
+        columnLabel: 'العرض (cm)',
+        placeholder: 'عرض جديد (cm)',
         renderItem: (item) => <span className="mono">{item.width} cm</span>
       };
 
@@ -165,8 +165,8 @@ function getEntityConfig(entity) {
         },
         deleteItem: deletePipeLength,
         isNumeric: true,
-        columnLabel: 'الطول (سم)',
-        placeholder: 'طول جديد (سم)',
+        columnLabel: 'الطول (cm)',
+        placeholder: 'طول جديد (cm)',
         renderItem: (item) => <span className="mono">{item.length} cm</span>
       };
 
@@ -218,8 +218,8 @@ function getEntityConfig(entity) {
         },
         deleteItem: deleteInkWeight,
         isNumeric: true,
-        columnLabel: 'الوزن (كجم)',
-        placeholder: 'وزن برميل جديد (كجم)',
+        columnLabel: 'الوزن (kg)',
+        placeholder: 'وزن برميل جديد (kg)',
         renderItem: (item) => <span className="mono">{item.weight} kg</span>
       };
 
