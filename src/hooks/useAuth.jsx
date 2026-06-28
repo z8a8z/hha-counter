@@ -15,10 +15,16 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const storedUser = localStorage.getItem('hha_user');
     if (storedUser) {
-      const parsed = JSON.parse(storedUser);
-      setUser(parsed);
-      // Load permissions for restored session
-      loadPermissions(parsed);
+      try {
+        const parsed = JSON.parse(storedUser);
+        setUser(parsed);
+        // Load permissions for restored session
+        loadPermissions(parsed);
+      } catch {
+        // Corrupt localStorage — clear and start fresh
+        localStorage.removeItem('hha_user');
+        setLoading(false);
+      }
     } else {
       setLoading(false);
     }
@@ -79,5 +85,7 @@ export function AuthProvider({ children }) {
 }
 
 export function useAuth() {
-  return useContext(AuthContext);
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
 }

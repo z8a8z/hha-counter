@@ -293,3 +293,19 @@
 | `user_id` | `uuid` | Primary |
 | `allowed_tabs` | `_text` |  |
 
+## Table `damaged_records`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `item_type` | `text` |  |
+| `roll_id` | `int4` |  Nullable |
+| `variant_id_1` | `int4` |  |
+| `variant_id_2` | `int4` |  Nullable |
+| `quantity` | `numeric` |  |
+| `notes` | `text` |  Nullable |
+| `created_by` | `text` |  Nullable |
+| `created_at` | `timestamptz` |  |
+

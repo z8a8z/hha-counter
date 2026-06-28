@@ -105,7 +105,7 @@ function KeyboardSidebar({ activeField, onKey, onSave, saveDisabled }) {
 }
 
 /* ─── Main Component ─────────────────────────────────────── */
-export default function ReadyOrders() {
+export default function ReadyOrders({ refreshTrigger }) {
   const [orders, setOrders] = useState([]);
   const { printHtml } = usePrint();
   const [loading, setLoading] = useState(true);
@@ -169,7 +169,7 @@ export default function ReadyOrders() {
 
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [refreshTrigger]);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -208,6 +208,8 @@ export default function ReadyOrders() {
     if (createErr) {
       setError('فشل في إنشاء طلبية جديدة: ' + createErr);
     } else if (data) {
+      // Refresh list so exiting editing mode shows the new entry immediately
+      fetchOrders();
       const { data: refreshedData } = await getReadyOrders();
       if (refreshedData) {
         const found = refreshedData.find(o => o.id === data.id);
@@ -314,6 +316,8 @@ export default function ReadyOrders() {
       setError('فشل في حفظ البيانات: ' + saveErr);
     } else {
       setSuccessMsg('تم حفظ الطلبية بنجاح!');
+      // Refresh the orders list dynamically
+      fetchOrders();
       // Keep focus on the active field after save – re-focus it
       setTimeout(() => {
         if (activeField?.type === 'roll' && activeField.id) {
@@ -624,7 +628,7 @@ export default function ReadyOrders() {
             {visibleOrders.map((order) => {
               const { count, netWeight } = getOrderStats(order);
               const isReady = order.status === 'ready';
-              const parentOrderClosed = order.orders && order.orders.status === 'cancelled';
+              const parentOrderClosed = order.orders && (order.orders.status === 'cancelled' || order.orders.status === 'completed');
 
 
               return (
@@ -638,7 +642,7 @@ export default function ReadyOrders() {
                     <div style={{ display: 'flex', gap: '0.35rem' }}>
                       <button
                         type="button"
-                        className="card-print-btn"
+                        className="ready-card-action-btn"
                         onClick={(e) => handlePrint(order, e)}
                         title="طباعة بطاقة التجهيز"
                         disabled={loading}
@@ -647,7 +651,7 @@ export default function ReadyOrders() {
                       </button>
                       <button
                         type="button"
-                        className="card-print-btn"
+                        className="ready-card-action-btn"
                         onClick={(e) => handleDeleteOrder(order.id, order.name, e)}
                         title="حذف بطاقة التجهيز"
                         disabled={loading}

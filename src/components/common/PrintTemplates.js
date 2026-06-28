@@ -33,205 +33,18 @@ export const PrintTemplates = {
    * Order Management Layout (إدارة)
    */
   orderManagement(order, formDetails, customSettings = {}) {
-    const s = { ...defaultSettings.general, ...customSettings.general };
-    const o = { ...defaultSettings.mgmtOrder, ...customSettings.mgmtOrder };
-    
-    const formattedDate = new Date(order.order_date).toLocaleDateString('ar-EG');
-    const jobTypes = Array.isArray(formDetails.job_types) 
-      ? formDetails.job_types.join(' - ') 
-      : (formDetails.job_types || '—');
-
     return `
       <html dir="rtl" lang="ar">
         <head>
           <meta charset="utf-8">
-          <title>${o.title} #${order.id}</title>
+          <title>طلبية إدارة</title>
           <style>
-            @media print {
-              @page { size: A4 portrait; margin: 0; }
-              html, body { height: 100%; max-height: 100%; overflow: hidden; page-break-inside: avoid; }
-            }
-            * { box-sizing: border-box; }
-            body {
-              font-family: '${s.fontFamily}', Tahoma, sans-serif;
-              color: #111;
-              margin: 0;
-              padding: 12mm;
-              direction: rtl;
-              background-color: #fff;
-              line-height: 1.35;
-            }
-            .header {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              border-bottom: ${s.lineWidthFree}px solid #000;
-              padding-bottom: 8px;
-              margin-bottom: 12px;
-            }
-            .header-info h1 { margin: 0; font-size: 18pt; font-weight: bold; }
-            .header-info h2 { margin: 3px 0 0 0; font-size: 12pt; font-weight: normal; color: #444; }
-            .header-logo {
-              max-height: 60px;
-              max-width: 150px;
-            }
-            .header-logo-text {
-              font-size: 16pt;
-              font-weight: bold;
-              border: ${s.lineWidthTable}px solid #000;
-              padding: 4px 10px;
-            }
-            
-            .meta-grid {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 8px;
-              margin-bottom: 12px;
-              border: ${s.lineWidthTable}px solid #000;
-              padding: 10px;
-            }
-            .meta-item {
-              font-size: 10.5pt;
-            }
-            .meta-item strong {
-              color: #000;
-              display: inline-block;
-              width: 120px;
-            }
-            
-            .section-title {
-              font-size: 11pt;
-              font-weight: bold;
-              border-bottom: ${s.lineWidthFree}px solid #000;
-              padding-bottom: 2px;
-              margin-top: 10px;
-              margin-bottom: 6px;
-            }
-            
-            .data-table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-bottom: 10px;
-            }
-            .data-table th, .data-table td {
-              border: ${s.lineWidthTable}px solid #000;
-              padding: 6px 8px;
-              text-align: right;
-              font-size: 10pt;
-            }
-            .data-table th {
-              background-color: #f5f5f5;
-              font-weight: bold;
-              width: 200px;
-            }
-            
-            .footer {
-              position: absolute;
-              bottom: 12mm;
-              left: 12mm;
-              right: 12mm;
-              text-align: center;
-              font-size: 9pt;
-              border-top: ${s.lineWidthFree}px solid #000;
-              padding-top: 10px;
-            }
+            body { font-family: sans-serif; text-align: center; padding: 50px; direction: rtl; }
           </style>
         </head>
         <body>
-          <div class="header">
-            <div class="header-info">
-              <h1>${s.factoryName}</h1>
-              <h2>${o.title} (إدارة) - رقم #${order.id}</h2>
-              <div style="font-size: 9pt; margin-top: 2px;">الهاتف: ${s.phone}</div>
-            </div>
-            <div>
-              ${s.logoUrl ? `<img src="${s.logoUrl}" class="header-logo" alt="logo">` : `<span class="header-logo-text">HHA</span>`}
-            </div>
-          </div>
-          
-          <div class="meta-grid">
-            <div class="meta-item"><strong>اسم العميل:</strong> ${order.customer_name}</div>
-            <div class="meta-item"><strong>تاريخ الطلبية:</strong> ${formattedDate}</div>
-            <div class="meta-item"><strong>رقم الهاتف:</strong> ${formDetails.customer_phone || '—'}</div>
-            <div class="meta-item"><strong>اسم المنظم:</strong> ${formDetails.organizer_name || '—'}</div>
-            <div class="meta-item"><strong>الفني المسؤول:</strong> ${formDetails.technician || '—'} / ${formDetails.assistant_technician || '—'}</div>
-            <div class="meta-item"><strong>الشفت:</strong> ${formDetails.shift || '—'}</div>
-          </div>
-          
-          <div class="section-title">المواصفات الفنية والإنتاج</div>
-          <table class="data-table">
-            <tr>
-              <th>الوصف الوظيفي</th>
-              <td>${formDetails.functional_desc || '—'}</td>
-            </tr>
-            <tr>
-              <th>نوعية العمل</th>
-              <td>${jobTypes}</td>
-            </tr>
-            <tr>
-              <th>الكمية المطلوبة (kg)</th>
-              <td>${formDetails.weight_kg || '0'} kg</td>
-            </tr>
-            <tr>
-              <th>أبعاد المنتج (طول × عرض)</th>
-              <td>${formDetails.production_length || '0'} mm × ${formDetails.production_width || '0'} mm</td>
-            </tr>
-            <tr>
-              <th>الطباعة والفيلم</th>
-              <td>
-                المادة: ${formDetails.material || '—'} | 
-                السماكة: ${formDetails.mic_value || '0'} Mic | 
-                النوع: ${formDetails.print_style || '—'} (${formDetails.print_subtype || '—'}) | 
-                ألوان: ${formDetails.print_color_count || '0'} ألوان
-              </td>
-            </tr>
-            <tr>
-              <th>كمية الطبع / قياس المواد</th>
-              <td>كمية: ${formDetails.print_quantity || '0'} | قياس المواد: ${formDetails.material_measure || '0'} mm</td>
-            </tr>
-            <tr>
-              <th>اللامنيشن والغراء</th>
-              <td>
-                الصمغ: ${formDetails.glue_type || '—'} |
-                اللامنيشن: ${formDetails.lamination_needed ? 'نعم' : 'لا'}
-                ${formDetails.lamination_mat1 ? `<br>• مادة 1: ${formDetails.lamination_mat1} (${formDetails.lamination_meas1} mm، ${formDetails.lamination_mic1} Mic)` : ''}
-                ${formDetails.lamination_mat2 ? `<br>• مادة 2: ${formDetails.lamination_mat2} (${formDetails.lamination_meas2} mm， ${formDetails.lamination_mic2} Mic)` : ''}
-              </td>
-            </tr>
-            <tr>
-              <th>التقطيع والتغليف وشكل اللف</th>
-              <td>
-                تقطيع: ${formDetails.cutting_needed ? 'نعم' : 'لا'} | 
-                تغليف: ${formDetails.packaging_needed ? 'نعم' : 'لا'} | 
-                اللف: شكل ${formDetails.wrap_shape || '—'} (قطر ${formDetails.wrap_diameter || '0'} mm، وزن ${formDetails.wrap_weight || '0'} kg)
-              </td>
-            </tr>
-            <tr>
-              <th>مكان التسليم</th>
-              <td>${formDetails.delivery_location || '—'}</td>
-            </tr>
-          </table>
-          
-          <div class="section-title">الحسابات والمالية</div>
-          <table class="data-table">
-            <tr>
-              <th>طريقة وتفاصيل الدفع</th>
-              <td>طريقة: ${formDetails.payment_method || '—'} | تفاصيل: ${formDetails.payment_details || '—'}</td>
-            </tr>
-            <tr>
-              <th>المبلغ الكلي الإجمالي</th>
-              <td><strong>${parseFloat(formDetails.total_amount || 0).toLocaleString('ar-IQ')} دينار عراقي</strong></td>
-            </tr>
-            <tr>
-              <th>ملاحظات إضافية</th>
-              <td>${order.details || '—'}</td>
-            </tr>
-          </table>
-          
-          <div class="footer">
-            <p>${o.notes}</p>
-            <div style="font-size: 8pt; color: #666; margin-top: 4px;">نظام HHA - مطبعة ${s.factoryName}</div>
-          </div>
+          <h2>استمارة طلبية الإدارة قيد إعادة التصميم 🔧</h2>
+          <p>سيتم تفعيل هذا النموذج قريباً بعد تحديث المتطلبات.</p>
         </body>
       </html>
     `;
@@ -278,6 +91,17 @@ export const PrintTemplates = {
             }
             .header-info h1 { margin: 0; font-size: 18pt; font-weight: 900; }
             .header-info h2 { margin: 3px 0 0 0; font-size: 12pt; font-weight: bold; }
+            .header-logo {
+              max-height: 60px;
+              max-width: 150px;
+              object-fit: contain;
+            }
+            .header-logo-text {
+              font-size: 16pt;
+              font-weight: bold;
+              border: ${s.lineWidthTable}px solid #000;
+              padding: 4px 10px;
+            }
             
             .meta-grid {
               display: grid;
@@ -347,9 +171,10 @@ export const PrintTemplates = {
             <div class="header-info">
               <h1>أمر تشغيل الورشة</h1>
               <h2>${o.title} - رقم #${order.id}</h2>
+              <div style="font-size: 9pt; margin-top: 2px;">الهاتف: ${s.phone} | الفني المسؤول: ${formDetails.technician || '—'}</div>
             </div>
-            <div style="font-size: 10pt; font-weight: bold;">
-              فني المسؤول: ${formDetails.technician || '—'}
+            <div>
+              <img src="/images/printingslogo.png" class="header-logo" alt="logo">
             </div>
           </div>
           
@@ -415,7 +240,14 @@ export const PrintTemplates = {
             </tr>
             <tr>
               <th>مواصفات بكرة اللف النهائية</th>
-              <td>شكل اللف: <strong>${formDetails.wrap_shape || '—'}</strong> | قطر: ${formDetails.wrap_diameter || '0'} mm | وزن: ${formDetails.wrap_weight || '0'} kg</td>
+              <td>
+                شكل اللف: <strong>${formDetails.wrap_shape === 'a' ? 'a: عدل' : formDetails.wrap_shape === 'b' ? 'b: عكس' : formDetails.wrap_shape || '—'}</strong> | قطر: ${formDetails.wrap_diameter || '0'} mm | وزن: ${formDetails.wrap_weight || '0'} kg
+                ${formDetails.wrap_shape === 'a' || formDetails.wrap_shape === 'b' ? `
+                  <div style="margin-top: 6px;">
+                    <img src="/images/wrap${formDetails.wrap_shape}.png" alt="wrap shape" style="height: 55px; border: 1px solid #ddd; border-radius: 4px; background: #fff; padding: 2px;" />
+                  </div>
+                ` : ''}
+              </td>
             </tr>
             <tr>
               <th>تعليمات التسليم للورشة</th>
@@ -451,13 +283,13 @@ export const PrintTemplates = {
     const netWeight = grossWeight - (rolls.length * pipeWeight);
     const formattedDate = new Date(readyOrder.created_at || new Date()).toLocaleDateString('ar-EG');
 
-    // Build the 3 columns x 15 rows = 45 cells matrix filled column-by-column
-    // Column 1: indices 0-14, Column 2: 15-29, Column 3: 30-44
+    // Build the 4 columns x 15 rows = 60 cells matrix filled column-by-column
+    // Column 1: indices 0-14, Column 2: 15-29, Column 3: 30-44, Column 4: 45-59
     // We render row-by-row:
     let tableRowsHtml = '';
     for (let r = 0; r < 15; r++) {
       tableRowsHtml += '<tr>';
-      for (let c = 0; c < 3; c++) {
+      for (let c = 0; c < 4; c++) {
         const index = r + (c * 15);
         const weightValue = rollWeights[index];
         // Pad remaining/empty cells with '-'
@@ -499,10 +331,15 @@ export const PrintTemplates = {
               line-height: 1.3;
             }
             .header-bar {
-              text-align: center;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
               border-bottom: ${s.lineWidthFree}px solid #000;
               padding-bottom: 4px;
               margin-bottom: 8px;
+            }
+            .header-bar-text {
+              text-align: right;
             }
             .header-bar h1 {
               margin: 0;
@@ -513,6 +350,11 @@ export const PrintTemplates = {
               margin: 2px 0 0 0;
               font-size: 8.5pt;
               color: #444;
+            }
+            .header-logo {
+              max-height: 35px;
+              max-width: 120px;
+              object-fit: contain;
             }
             
             .meta-grid {
@@ -570,8 +412,8 @@ export const PrintTemplates = {
             }
             .cut-label {
               position: absolute;
-              bottom: 1px;
-              left: 5px;
+              bottom: 3px;
+              left: 10px;
               font-size: 8pt;
               color: #888;
             }
@@ -580,22 +422,28 @@ export const PrintTemplates = {
         <body>
           <div class="a5-card">
             <div class="header-bar">
-              <h1>${s.factoryName}</h1>
-              <p>${o.title} | التاريخ: ${formattedDate}</p>
+              <div class="header-bar-text">
+                <h1>${s.factoryName}</h1>
+                <p>${o.title} | التاريخ: ${formattedDate}</p>
+              </div>
+              <div>
+                <img src="/images/printingslogo.png" class="header-logo" alt="logo">
+              </div>
             </div>
             
             <div class="meta-grid">
               <div><strong>اسم التجهيز:</strong> ${readyOrder.name}</div>
-              <div><strong>رقم الطلب المرتبط:</strong> ${readyOrder.order_id ? `#${readyOrder.order_id}` : '—'}</div>
+              <div><strong>رقم الطلب:</strong> ${readyOrder.order_id ? `#${readyOrder.order_id}` : '—'}</div>
               <div><strong>عدد الرولات:</strong> ${rolls.length} رول</div>
             </div>
             
             <table class="grid-table">
               <thead>
                 <tr>
-                  <th>أوزان العمود 1 (kg)</th>
-                  <th>أوزان العمود 2 (kg)</th>
-                  <th>أوزان العمود 3 (kg)</th>
+                  <th>العمود 1 (kg)</th>
+                  <th>العمود 2 (kg)</th>
+                  <th>العمود 3 (kg)</th>
+                  <th>العمود 4 (kg)</th>
                 </tr>
               </thead>
               <tbody>
@@ -610,12 +458,12 @@ export const PrintTemplates = {
                 <div><strong>وزن الماسورة:</strong> ${pipeWeight.toFixed(3)} kg</div>
                 <div><strong>عدد الرولات:</strong> ${rolls.length} رول</div>
                 <div class="totals-highlight">
-                  الوزن الصافي الكلي: ${netWeight.toFixed(2)} kg
+                  الوزن الصافي: ${netWeight.toFixed(2)} kg
                 </div>
               </div>
             </div>
             
-            ${o.notes ? `<div style="font-size: 8.5pt; margin-top: 4px; text-align: center; font-style: italic;">${o.notes}</div>` : ''}
+            ${o.notes ? `<div style="font-size: 8.5pt; margin-top: 4px; text-align: center; font-style: italic; padding: 0 40px; word-break: break-word;">${o.notes}</div>` : ''}
             
             <div class="cut-label">✂️</div>
           </div>

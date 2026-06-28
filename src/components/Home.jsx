@@ -4,6 +4,7 @@ import Purchases from './purchases/Purchases.jsx';
 import ReadyOrders from './orders/ReadyOrders.jsx';
 import Orders from './orders/Orders.jsx';
 import StorageDashboard from './storage/StorageDashboard.jsx';
+import Damaged from './storage/Damaged.jsx';
 
 const TABS = [
   { id: 'purchases', label: 'مشتريات',    icon: '🛒' },
@@ -36,6 +37,11 @@ export default function Home() {
       });
     }
   }, [allowedTabs, activeTab, filteredTabs]);
+
+  const [readyRefreshTrigger, setReadyRefreshTrigger] = useState(0);
+  const handleOrdersStatusChange = () => {
+    setReadyRefreshTrigger(prev => prev + 1);
+  };
 
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
@@ -72,12 +78,12 @@ export default function Home() {
         )}
         {allowedTabs.includes('ready') && visitedTabs.has('ready') && (
           <div style={{ display: activeTab === 'ready' ? 'block' : 'none' }}>
-            <ReadyOrders />
+            <ReadyOrders refreshTrigger={readyRefreshTrigger} />
           </div>
         )}
         {allowedTabs.includes('orders') && visitedTabs.has('orders') && (
           <div style={{ display: activeTab === 'orders' ? 'block' : 'none' }}>
-            <Orders />
+            <Orders onStatusChange={handleOrdersStatusChange} />
           </div>
         )}
         {allowedTabs.includes('withdraw') && visitedTabs.has('withdraw') && (
@@ -86,8 +92,8 @@ export default function Home() {
           </div>
         )}
         {allowedTabs.includes('damaged') && visitedTabs.has('damaged') && (
-          <div style={{ display: activeTab === 'damaged' ? 'block' : 'none' }} className="empty-tab">
-            قسم التالف قيد التطوير 🔧
+          <div style={{ display: activeTab === 'damaged' ? 'block' : 'none' }}>
+            <Damaged />
           </div>
         )}
         {allowedTabs.includes('storage') && visitedTabs.has('storage') && (

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   getLiquids, getLiquidTypes,
-  addLiquidType,
+  addLiquidType, deleteLiquidType,
   upsertLiquid, deleteLiquid
 } from '../../lib/database.js';
 import { useStorageEntity } from '../../hooks/useStorage.js';
@@ -17,13 +17,14 @@ const liquidsApi = {
 export default function StorageLiquids() {
   const {
     items, lookups: types, loading, error, successMsg,
-    fetchAll, addLookup, upsertItem, deleteItem, clearMessages
+    fetchAll, addLookup, upsertItem, deleteItem
   } = useStorageEntity(liquidsApi);
 
   const [selectedType, setSelectedType] = useState('');
   const [quantity, setQuantity] = useState('0');
   const [notes, setNotes] = useState('');
   const [newTypeName, setNewTypeName] = useState('');
+  const [localError, setLocalError] = useState('');
 
   const hasFetched = useRef(false);
 
@@ -49,13 +50,21 @@ export default function StorageLiquids() {
     if (ok) setNewTypeName('');
   };
 
+  const handleDeleteType = async (id, name) => {
+    if (!window.confirm(`حذف نوع السائل "${name}"؟`)) return;
+    const { error: err } = await deleteLiquidType(id);
+    if (err) { setLocalError(err); return; }
+    setLocalError('');
+    fetchAll();
+  };
+
   if (loading && items.length === 0) {
     return <div className="storage-loading"><div className="spinner"></div><p>جاري تحميل السوائل...</p></div>;
   }
 
   return (
     <div className="storage-entity">
-      {error && <div className="error-banner">{error}</div>}
+      {(error || localError) && <div className="error-banner">{error || localError}</div>}
       {successMsg && <div className="success-banner">{successMsg}</div>}
 
       <div className="storage-layout">
@@ -129,7 +138,10 @@ export default function StorageLiquids() {
             </div>
             <ul className="lookup-list">
               {types.map((t) => (
-                <li key={t.id}><span>{t.name}</span></li>
+                <li key={t.id}>
+                  <span>{t.name}</span>
+                  <button className="btn-delete-mini" onClick={() => handleDeleteType(t.id, t.name)} title="حذف">x</button>
+                </li>
               ))}
             </ul>
           </div>

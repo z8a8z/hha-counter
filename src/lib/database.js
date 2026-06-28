@@ -351,6 +351,12 @@ export async function addLiquidType(name) {
   return { error: null };
 }
 
+export async function deleteLiquidType(id) {
+  const { error } = await supabase.from('liquid_types').delete().eq('id', id);
+  if (error) { debug.error(MODULE, 'deleteLiquidType error', error); return { error: error.message }; }
+  return { error: null };
+}
+
 export async function upsertLiquid(typeId, quantity, notes) {
   const { error } = await supabase
     .from('liquids')
@@ -716,5 +722,35 @@ export async function savePrintSettings(settings) {
   }
   return { error: null };
 }
+
+export async function getDamagedRecords() {
+  const { valid, missing } = validateEnv();
+  if (!valid) return { data: null, error: 'Env not configured' };
+  const { data, error } = await supabase
+    .from('damaged_records')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) {
+    debug.error(MODULE, 'getDamagedRecords error', error);
+    return { data: null, error: error.message };
+  }
+  return { data, error: null };
+}
+
+export async function addDamagedRecord(record) {
+  const { valid, missing } = validateEnv();
+  if (!valid) return { data: null, error: 'Env not configured' };
+  const { data, error } = await supabase
+    .from('damaged_records')
+    .insert(record)
+    .select()
+    .single();
+  if (error) {
+    debug.error(MODULE, 'addDamagedRecord error', error);
+    return { data: null, error: error.message };
+  }
+  return { data, error: null };
+}
+
 
 

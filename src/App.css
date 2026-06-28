@@ -11,32 +11,32 @@
 
 :root {
   /* ── Brand palette ── */
-  --clr-accent:        #6366f1;
-  --clr-accent-light:  #818cf8;
-  --clr-accent-dim:    rgba(99, 102, 241, 0.15);
+  --clr-accent:        #1C3273;
+  --clr-accent-light:  #415EB1;
+  --clr-accent-dim:    rgba(65, 94, 177, 0.12);
   --clr-green:         #10b981;
-  --clr-green-dim:     rgba(16, 185, 129, 0.15);
-  --clr-amber:         #f59e0b;
-  --clr-amber-dim:     rgba(245, 158, 11, 0.15);
+  --clr-green-dim:     rgba(16, 185, 129, 0.12);
+  --clr-amber:         #d97706;
+  --clr-amber-dim:     rgba(217, 119, 6, 0.12);
   --clr-red:           #ef4444;
-  --clr-red-dim:       rgba(239, 68, 68, 0.15);
+  --clr-red-dim:       rgba(239, 68, 68, 0.12);
 
   /* ── Surface ── */
-  --bg-page:       #0d1117;
-  --bg-sidebar:    #111827;
-  --bg-card:       #1a2235;
-  --bg-elevated:   #1e2d45;
-  --bg-hover:      rgba(255, 255, 255, 0.04);
-  --bg-active:     rgba(99, 102, 241, 0.12);
+  --bg-page:       #FFFFFF;
+  --bg-sidebar:    #F8FAFC;
+  --bg-card:       #FFFFFF;
+  --bg-elevated:   #F1F5F9;
+  --bg-hover:      rgba(65, 94, 177, 0.06);
+  --bg-active:     rgba(28, 50, 115, 0.08);
 
   /* ── Borders ── */
-  --border:        rgba(255, 255, 255, 0.07);
-  --border-focus:  rgba(99, 102, 241, 0.5);
+  --border:        #E2E8F0;
+  --border-focus:  #415EB1;
 
   /* ── Text ── */
-  --txt-primary:   #f0f4ff;
-  --txt-secondary: #8b9ab5;
-  --txt-muted:     #4d5f7a;
+  --txt-primary:   #000000;
+  --txt-secondary: #334155;
+  --txt-muted:     #64748B;
 
   /* ── Layout ── */
   --sidebar-w:     220px;
@@ -46,8 +46,8 @@
   --radius-lg:     18px;
 
   /* ── Shadows ── */
-  --shadow-card:   0 4px 24px rgba(0, 0, 0, 0.35);
-  --shadow-modal:  0 24px 60px rgba(0, 0, 0, 0.55);
+  --shadow-card:   0 4px 20px rgba(28, 50, 115, 0.05);
+  --shadow-modal:  0 20px 48px rgba(28, 50, 115, 0.12);
 }
 
 html {
@@ -491,8 +491,8 @@ select {
   width: 100%;
   padding: 0.65rem 0.9rem;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
   color: var(--txt-primary);
   font-size: 0.9rem;
   outline: none;
@@ -508,7 +508,7 @@ input[type="password"]:focus,
 input[type="number"]:focus,
 select:focus {
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 0 3px rgba(65, 94, 177, 0.15);
 }
 
 input[type="number"]::-webkit-inner-spin-button,
@@ -1046,7 +1046,8 @@ input[type="number"] {
 }
 
 /* Print icon button on card */
-.card-print-btn {
+.card-print-btn,
+.ready-card-action-btn {
   background: none;
   border: none;
   cursor: pointer;
@@ -1058,12 +1059,14 @@ input[type="number"] {
   flex-shrink: 0;
 }
 
-.card-print-btn:hover {
+.card-print-btn:hover,
+.ready-card-action-btn:hover {
   background: var(--bg-hover);
   opacity: 1;
 }
 
-.card-print-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.card-print-btn:disabled,
+.ready-card-action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 .order-card-body {
   display: flex;
@@ -1547,8 +1550,8 @@ input[type="number"] {
 }
 
 .orders-table th {
-  background: rgba(0, 0, 0, 0.2);
-  color: var(--txt-muted);
+  background: var(--bg-elevated);
+  color: var(--txt-secondary);
   font-weight: 600;
   font-size: 0.78rem;
   padding: 0.9rem 1.1rem;
@@ -1561,13 +1564,13 @@ input[type="number"] {
 .orders-table td {
   padding: 0.9rem 1.1rem;
   text-align: right;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  color: #dde4f0;
+  border-bottom: 1px solid var(--border);
+  color: var(--txt-primary);
   vertical-align: middle;
   font-size: 0.875rem;
 }
 
-.orders-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+.orders-table tbody tr:hover { background: var(--bg-hover); }
 
 .details-cell {
   max-width: 220px;
@@ -1738,14 +1741,14 @@ table { width: 100%; border-collapse: collapse; }
 th, td {
   padding: 0.85rem 1rem;
   text-align: left;
-  border-bottom: 1px solid rgba(255,255,255,0.045);
+  border-bottom: 1px solid var(--border);
 }
 
 th {
-  background: rgba(0,0,0,0.25);
+  background: var(--bg-elevated);
   font-size: 0.75rem;
   text-transform: uppercase;
-  color: var(--txt-muted);
+  color: var(--txt-secondary);
   letter-spacing: 0.05em;
   font-weight: 600;
 }
@@ -2022,6 +2025,56 @@ td { font-size: 0.88rem; }
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+}
+
+/* ── Storage Container (Dashboard wrapper) ─────────────── */
+.storage-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Storage Entity (individual sub-view wrapper) ────────── */
+.storage-entity {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Storage Manage Panel (mode: manage sub-panel) ───────── */
+.storage-manage-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.storage-manage-content {
+  padding-top: 1rem;
+}
+
+/* ── Inline edit input (storage tables) ─────────────────── */
+.inline-edit-input {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--txt-primary);
+  padding: 0.2rem 0.4rem;
+  font-size: 0.88rem;
+  width: 100%;
+  font-family: inherit;
+  outline: none;
+}
+.inline-edit-input:focus {
+  border-color: var(--clr-accent);
+}
+
+/* ── Tab content wrapper ─────────────────────────────────── */
+.tab-content {
+  flex: 1;
+  overflow: auto;
 }
 
 .storage-tabs-header,
@@ -2497,10 +2550,10 @@ td { font-size: 0.88rem; }
   );
   border-top: 1px solid rgba(99, 102, 241, 0.18);
   padding: 1rem 1.25rem 1.25rem;
-  animation: fadeUp 0.22s ease-out;
+  animation: fadeDown 0.22s ease-out;
 }
 
-@keyframes fadeUp {
+@keyframes fadeDown {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
@@ -2671,9 +2724,13 @@ td { font-size: 0.88rem; }
 }
 
 .rect-toggle.selected {
-  background: var(--clr-primary);
-  border-color: var(--clr-primary);
+  background: var(--clr-accent);
+  border-color: var(--clr-accent);
   color: #ffffff;
   font-weight: 600;
   box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+}
+
+.order-row-selected {
+  background-color: rgba(99, 102, 241, 0.08) !important;
 }

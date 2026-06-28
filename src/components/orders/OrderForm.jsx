@@ -440,9 +440,16 @@ export default function OrderForm({ onCancel, onSuccess }) {
               <div className="form-group">
                 <label>شكل اللف</label>
                 <select value={wrapShape} onChange={e => setWrapShape(e.target.value)}>
-                  <option value="a">a</option>
-                  <option value="b">b</option>
+                  <option value="a">a: عدل</option>
+                  <option value="b">b: عكس</option>
                 </select>
+                <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center' }}>
+                  <img 
+                    src={wrapShape === 'a' ? '/images/wrapa.png' : '/images/wrapb.png'} 
+                    alt="wrap shape" 
+                    style={{ height: '70px', borderRadius: '4px', border: '1px solid var(--border)', background: '#fff', padding: '2px' }} 
+                  />
+                </div>
               </div>
               <div className="form-group">
                 <label>قطر (mm)</label>

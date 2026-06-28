@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import Sidebar from './components/common/Sidebar.jsx';
 import Login from './components/auth/Login.jsx';
 import Home from './components/Home.jsx';
 import Settings from './components/admin/Settings.jsx';
+import { getPrintSettings } from './lib/database.js';
 import './App.css';
 
 // Protected Route wrapper
@@ -44,7 +45,10 @@ function AppShell() {
       <div className="app-main">
         {/* Topbar (mobile only brand + hamburger) */}
         <header className="app-topbar">
-          <span className="topbar-title">HHA</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <img src="/images/printingslogo.png" alt="Logo" style={{ maxHeight: '32px', maxWidth: '32px', objectFit: 'contain', borderRadius: '4px', background: '#fff', padding: '1px' }} />
+            <span className="topbar-title">HHA</span>
+          </div>
           <div className="topbar-actions">
             <button
               className="menu-btn"

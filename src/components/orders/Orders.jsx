@@ -23,7 +23,7 @@ const READY_STATUS_LABELS = {
 };
 
 /* ─── Prepared Card (read-only) ─────────────────────────────── */
-function PreparedCard({ readyOrder, onDelete }) {
+function PreparedCard({ readyOrder, onDelete, onPrint }) {
   const rolls = readyOrder.ready_order_rolls || [];
   const grossWeight = rolls.reduce((sum, r) => sum + (parseFloat(r.weight) || 0), 0);
   const pipeWeight = parseFloat(readyOrder.pipe_weight) || 0;
@@ -38,6 +38,19 @@ function PreparedCard({ readyOrder, onDelete }) {
           <span className={`status-badge ${isReady ? 'status-badge-ready' : 'status-badge-preparing'}`}>
             {READY_STATUS_LABELS[readyOrder.status] || READY_STATUS_LABELS.preparing}
           </span>
+          {onPrint && (
+            <button
+              type="button"
+              className="card-print-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPrint(readyOrder);
+              }}
+              title="طباعة بطاقة التجهيز"
+            >
+              🖨️
+            </button>
+          )}
           {onDelete && (
             <button
               type="button"
@@ -87,7 +100,7 @@ function PreparedCard({ readyOrder, onDelete }) {
   );
 }
 
-export default function Orders() {
+export default function Orders({ onStatusChange }) {
   const { user } = useAuth();
   const { printHtml } = usePrint();
   const [orders, setOrders] = useState([]);
@@ -115,6 +128,15 @@ export default function Orders() {
     const html = type === 'management' 
       ? PrintTemplates.orderManagement(order, formRes.data, settingsRes.data || {})
       : PrintTemplates.orderWork(order, formRes.data, settingsRes.data || {});
+    printHtml(html);
+  };
+
+  const handlePrintReadyOrder = async (readyOrder) => {
+    setLoading(true);
+    setError('');
+    const { data: settings } = await getPrintSettings();
+    setLoading(false);
+    const html = PrintTemplates.preparationCard(readyOrder, settings || {});
     printHtml(html);
   };
 
@@ -292,6 +314,21 @@ export default function Orders() {
                 <span className="toggle-slider" />
               </label>
             </div>
+            
+            {/* Migrated print button */}
+            <button
+              className="btn btn-small btn-outline"
+              style={{ backgroundColor: 'rgb(240, 249, 255)', borderColor: 'rgb(186, 230, 253)', minHeight: '36px' }}
+              title="طباعة الإدارة"
+              disabled={!expandedOrderId || loading}
+              onClick={() => {
+                const selectedOrder = orders.find(o => o.id === expandedOrderId);
+                if (selectedOrder) handlePrint(selectedOrder, 'management');
+              }}
+            >
+              📄 إدارة
+            </button>
+
             <button className="btn btn-primary" onClick={openAddForm} disabled={loading}>
               طلبية جديدة +
             </button>
@@ -399,7 +436,11 @@ export default function Orders() {
 
                   return (
                     <React.Fragment key={order.id}>
-                      <tr className={isExpanded && showPrepared ? 'order-row-expanded' : ''}>
+                      <tr 
+                        className={`${isExpanded ? 'order-row-selected' : ''} ${isExpanded && showPrepared ? 'order-row-expanded' : ''}`}
+                        onClick={() => toggleExpandedOrder(order.id)}
+                        style={{ cursor: 'pointer' }}
+                      >
                         <td>#{order.id}</td>
                         <td className="font-bold">{order.customer_name}</td>
                         <td>{new Date(order.order_date).toLocaleDateString('ar-EG')}</td>
@@ -411,6 +452,7 @@ export default function Orders() {
                           <select
                             className={`status-badge ${STATUS_CLASSES[order.status]}`}
                             value={order.status}
+                            onClick={(e) => e.stopPropagation()}
                             onChange={async (e) => {
                               const newStatus = e.target.value;
                               setLoading(true);
@@ -421,6 +463,7 @@ export default function Orders() {
                               } else {
                                 setSuccessMsg('تم تحديث حالة الطلبية بنجاح');
                                 fetchAll();
+                                if (onStatusChange) onStatusChange();
                               }
                             }}
                             style={{
@@ -442,29 +485,21 @@ export default function Orders() {
                           <div className="table-actions">
                             <button
                               className="btn btn-small btn-outline"
-                              onClick={() => openEditForm(order)}
+                              onClick={(e) => { e.stopPropagation(); openEditForm(order); }}
                               title="تعديل"
                             >
                               ✏️ تعديل
                             </button>
                             <button
                               className="btn btn-small btn-delete"
-                              onClick={() => handleDelete(order.id, order.customer_name)}
+                              onClick={(e) => { e.stopPropagation(); handleDelete(order.id, order.customer_name); }}
                               title="حذف"
                             >
                               🗑️ حذف
                             </button>
                             <button
                               className="btn btn-small btn-outline"
-                              onClick={() => handlePrint(order, 'management')}
-                              style={{ backgroundColor: '#f0f9ff', borderColor: '#bae6fd' }}
-                              title="طباعة الإدارة"
-                            >
-                              📄 إدارة
-                            </button>
-                            <button
-                              className="btn btn-small btn-outline"
-                              onClick={() => handlePrint(order, 'work')}
+                              onClick={(e) => { e.stopPropagation(); handlePrint(order, 'work'); }}
                               style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}
                               title="طباعة الورشة"
                             >
@@ -477,7 +512,7 @@ export default function Orders() {
                             {linked.length > 0 ? (
                               <button
                                 className={`btn btn-small ${isExpanded ? 'btn-primary' : 'btn-outline'}`}
-                                onClick={() => toggleExpandedOrder(order.id)}
+                                onClick={(e) => { e.stopPropagation(); toggleExpandedOrder(order.id); }}
                                 style={{ minWidth: '80px' }}
                               >
                                 {isExpanded ? '▲ إخفاء' : `▼ عرض (${linked.length})`}
@@ -502,7 +537,12 @@ export default function Orders() {
                               </div>
                               <div className="prepared-canvas-grid">
                                 {linked.map(ro => (
-                                  <PreparedCard key={ro.id} readyOrder={ro} onDelete={handleDeleteReadyOrder} />
+                                  <PreparedCard
+                                    key={ro.id}
+                                    readyOrder={ro}
+                                    onDelete={handleDeleteReadyOrder}
+                                    onPrint={handlePrintReadyOrder}
+                                  />
                                 ))}
                               </div>
                             </div>

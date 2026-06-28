@@ -139,16 +139,16 @@ function ViewRolls() {
         <div className="lookup-info-card">
           <h4>العروض المتاحة</h4>
           <div className="lookup-tags">
-            {widths.map((w) => (
-              <span key={w.id} className="lookup-tag">{w.width} cm</span>
+            {Array.from(new Set(items.map(item => item.width_label))).filter(Boolean).sort().map((wLabel, index) => (
+              <span key={index} className="lookup-tag">{wLabel} cm</span>
             ))}
           </div>
         </div>
         <div className="lookup-info-card">
           <h4>الأنواع المتاحة</h4>
           <div className="lookup-tags">
-            {types.map((t) => (
-              <span key={t.id} className="lookup-tag">{t.name}</span>
+            {Array.from(new Set(items.map(item => item.type_name))).filter(Boolean).sort().map((tName, index) => (
+              <span key={index} className="lookup-tag">{tName}</span>
             ))}
           </div>
         </div>
@@ -230,8 +230,8 @@ function ViewPipes() {
         <div className="lookup-info-card">
           <h4>الأطوال المتاحة</h4>
           <div className="lookup-tags">
-            {lengths.map((l) => (
-              <span key={l.id} className="lookup-tag">{l.length} cm</span>
+            {Array.from(new Set(activeItems.map(item => item.length_label))).filter(Boolean).sort().map((lLabel, index) => (
+              <span key={index} className="lookup-tag">{lLabel} cm</span>
             ))}
           </div>
         </div>
@@ -315,8 +315,8 @@ function ViewLiquids() {
         <div className="lookup-info-card">
           <h4>الأنواع المتاحة</h4>
           <div className="lookup-tags">
-            {types.map((t) => (
-              <span key={t.id} className="lookup-tag">{t.name}</span>
+            {Array.from(new Set(activeItems.map(item => item.type_name))).filter(Boolean).sort().map((tName, index) => (
+              <span key={index} className="lookup-tag">{tName}</span>
             ))}
           </div>
         </div>
@@ -405,16 +405,16 @@ function ViewInks() {
         <div className="lookup-info-card">
           <h4>الشركات</h4>
           <div className="lookup-tags">
-            {companies.map((c) => (
-              <span key={c.id} className="lookup-tag">{c.name}</span>
+            {Array.from(new Set(activeItems.map(item => item.company_name))).filter(Boolean).sort().map((cName, index) => (
+              <span key={index} className="lookup-tag">{cName}</span>
             ))}
           </div>
         </div>
         <div className="lookup-info-card">
           <h4>الألوان</h4>
           <div className="lookup-tags">
-            {colors.map((c) => (
-              <span key={c.id} className="lookup-tag">{c.name}</span>
+            {Array.from(new Set(activeItems.map(item => item.color_name))).filter(Boolean).sort().map((cName, index) => (
+              <span key={index} className="lookup-tag">{cName}</span>
             ))}
           </div>
         </div>

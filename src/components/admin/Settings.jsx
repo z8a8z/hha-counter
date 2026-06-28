@@ -286,13 +286,9 @@ function PrintSettings() {
                   <label>اسم المصنع أو الشركة الرئيسي</label>
                   <input type="text" value={factoryName} onChange={(e) => setFactoryName(e.target.value)} required />
                 </div>
-                <div className="form-group">
+                 <div className="form-group">
                   <label>رقم الاتصال للمطبوعات</label>
                   <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>رابط الشعار أو شعار النص</label>
-                  <input type="text" value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="رابط URL لشعار الشركة (اختياري)" />
                 </div>
                 <div className="form-group">
                   <label>نوع الخط المعتمد للطباعة</label>

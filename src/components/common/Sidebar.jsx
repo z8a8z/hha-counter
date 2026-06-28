@@ -2,7 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.jsx';
 
 const NAV_ITEMS = [
-  { path: '/', label: 'الرئيسية', icon: '⬛' },
+  { path: '/', label: 'الرئيسية', icon: '🏠' },
   { path: '/settings', label: 'الإعدادات', icon: '⚙️', adminOnly: true },
 ];
 
@@ -31,7 +31,7 @@ export default function Sidebar({ isOpen, onClose }) {
     <aside className={`app-sidebar ${isOpen ? 'open' : ''}`}>
       {/* Brand */}
       <div className="sidebar-brand">
-        <div className="sidebar-brand-icon">H</div>
+        <img src="/images/printingslogo.png" alt="Logo" style={{ maxHeight: '35px', maxWidth: '35px', objectFit: 'contain', borderRadius: '4px', background: '#fff', padding: '1px' }} />
         <span className="sidebar-brand-name">نظام HHA</span>
       </div>
 

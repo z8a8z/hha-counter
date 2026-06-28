@@ -64,8 +64,8 @@ export default function StorageInks() {
     fetchAll();
   };
 
-  const handleDeleteInk = async (id, label) => {
-    if (!window.confirm(`حذف الحبر "${label}"؟`)) return;
+  const handleDeleteInk = async (id, companyName, colorName) => {
+    if (!window.confirm(`حذف الحبر "${companyName} - ${colorName}"؟`)) return;
     const { error: err } = await deleteInk(id);
     if (err) { setError(err); return; }
     setSuccessMsg('تم حذف الحبر!');
@@ -96,18 +96,24 @@ export default function StorageInks() {
     fetchAll();
   };
 
-  const handleDeleteCompany = async (id) => {
-    await deleteInkCompany(id);
+  const handleDeleteCompany = async (id, name) => {
+    if (!window.confirm(`حذف شركة الحبر "${name}"؟`)) return;
+    const { error: err } = await deleteInkCompany(id);
+    if (err) { setError(err); return; }
     fetchAll();
   };
 
-  const handleDeleteColor = async (id) => {
-    await deleteInkColor(id);
+  const handleDeleteColor = async (id, name) => {
+    if (!window.confirm(`حذف لون الحبر "${name}"؟`)) return;
+    const { error: err } = await deleteInkColor(id);
+    if (err) { setError(err); return; }
     fetchAll();
   };
 
-  const handleDeleteWeight = async (id) => {
-    await deleteInkWeight(id);
+  const handleDeleteWeight = async (id, weight) => {
+    if (!window.confirm(`حذف وزن البرميل "${weight} kg"؟`)) return;
+    const { error: err } = await deleteInkWeight(id);
+    if (err) { setError(err); return; }
     fetchAll();
   };
 
@@ -161,7 +167,7 @@ export default function StorageInks() {
                       <td>
                         <button
                           className="btn btn-small btn-outline"
-                          onClick={() => handleDeleteInk(item.id, item.label)}
+                          onClick={() => handleDeleteInk(item.id, item.company_name, item.color_name)}
                         >حذف</button>
                       </td>
                     </tr>
@@ -216,7 +222,7 @@ export default function StorageInks() {
               {companies.map((c) => (
                 <li key={c.id}>
                   <span>{c.name}</span>
-                  <button className="btn-delete-mini" onClick={() => handleDeleteCompany(c.id)} title="حذف">x</button>
+                  <button className="btn-delete-mini" onClick={() => handleDeleteCompany(c.id, c.name)} title="حذف">x</button>
                 </li>
               ))}
             </ul>
@@ -232,7 +238,7 @@ export default function StorageInks() {
               {colors.map((c) => (
                 <li key={c.id}>
                   <span>{c.name}</span>
-                  <button className="btn-delete-mini" onClick={() => handleDeleteColor(c.id)} title="حذف">x</button>
+                  <button className="btn-delete-mini" onClick={() => handleDeleteColor(c.id, c.name)} title="حذف">x</button>
                 </li>
               ))}
             </ul>
@@ -248,7 +254,7 @@ export default function StorageInks() {
               {weights.map((w) => (
                 <li key={w.id}>
                   <span>{w.weight} kg</span>
-                  <button className="btn-delete-mini" onClick={() => handleDeleteWeight(w.id)} title="حذف">x</button>
+                  <button className="btn-delete-mini" onClick={() => handleDeleteWeight(w.id, w.weight)} title="حذف">x</button>
                 </li>
               ))}
             </ul>
