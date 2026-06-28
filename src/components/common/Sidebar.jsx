@@ -32,7 +32,6 @@ export default function Sidebar({ isOpen, onClose }) {
       {/* Brand */}
       <div className="sidebar-brand">
         <img src="/images/printingslogo.png" alt="Logo" style={{ maxHeight: '35px', maxWidth: '35px', objectFit: 'contain', borderRadius: '4px', background: '#fff', padding: '1px' }} />
-        <span className="sidebar-brand-name">نظام HHA</span>
       </div>
 
       {/* Navigation */}

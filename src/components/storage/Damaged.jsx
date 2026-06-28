@@ -94,13 +94,17 @@ export default function Damaged() {
       setAvailableStock(selected ? `${selected.weight} kg` : null);
       if (selected) setQuantity(selected.weight.toString());
     } else if (itemType === 'pipe' && variant1) {
-      const selected = lookups.pipes.find(p => p.length_id === parseInt(variant1));
+      const lengthObj = lookups.lengths.find(l => l.id === parseInt(variant1));
+      const selected = lengthObj ? lookups.pipes.find(p => p.length === lengthObj.length) : null;
       setAvailableStock(selected ? `${selected.quantity} pcs` : '0 pcs');
     } else if (itemType === 'liquid' && variant1) {
-      const selected = lookups.liquids.find(l => l.type_id === parseInt(variant1));
+      const typeObj = lookups.liquidTypes.find(lt => lt.id === parseInt(variant1));
+      const selected = typeObj ? lookups.liquids.find(l => l.type_name === typeObj.name) : null;
       setAvailableStock(selected ? `${selected.quantity} L` : '0 L');
     } else if (itemType === 'ink' && variant1 && variant2) {
-      const selected = lookups.inks.find(i => i.company_id === parseInt(variant1) && i.color_id === parseInt(variant2));
+      const compObj = lookups.companies.find(c => c.id === parseInt(variant1));
+      const colObj = lookups.colors.find(c => c.id === parseInt(variant2));
+      const selected = compObj && colObj ? lookups.inks.find(i => i.company_name === compObj.name && i.color_name === colObj.name) : null;
       setAvailableStock(selected ? `${selected.quantity} kg` : '0 kg');
     } else {
       setAvailableStock(null);
@@ -142,7 +146,8 @@ export default function Damaged() {
       }
     } else if (itemType === 'pipe') {
       if (!variant1) { setError('الرجاء اختيار طول الماسورة'); return; }
-      const selected = lookups.pipes.find(p => p.length_id === parseInt(variant1));
+      const lengthObj = lookups.lengths.find(l => l.id === parseInt(variant1));
+      const selected = lengthObj ? lookups.pipes.find(p => p.length === lengthObj.length) : null;
       const stock = selected ? selected.quantity : 0;
       if (qtyVal > stock) {
         setError(`الكمية التالفة (${qtyVal} pcs) تتجاوز الرصيد المتوفر في المخزن (${stock} pcs)`);
@@ -150,7 +155,8 @@ export default function Damaged() {
       }
     } else if (itemType === 'liquid') {
       if (!variant1) { setError('الرجاء اختيار نوع السائل'); return; }
-      const selected = lookups.liquids.find(l => l.type_id === parseInt(variant1));
+      const typeObj = lookups.liquidTypes.find(lt => lt.id === parseInt(variant1));
+      const selected = typeObj ? lookups.liquids.find(l => l.type_name === typeObj.name) : null;
       const stock = selected ? selected.quantity : 0;
       if (qtyVal > stock) {
         setError(`الكمية التالفة (${qtyVal} L) تتجاوز الرصيد المتوفر في المخزن (${stock} L)`);
@@ -159,7 +165,9 @@ export default function Damaged() {
     } else if (itemType === 'ink') {
       if (!variant1) { setError('الرجاء اختيار شركة الحبر'); return; }
       if (!variant2) { setError('الرجاء اختيار لون الحبر'); return; }
-      const selected = lookups.inks.find(i => i.company_id === parseInt(variant1) && i.color_id === parseInt(variant2));
+      const compObj = lookups.companies.find(c => c.id === parseInt(variant1));
+      const colObj = lookups.colors.find(c => c.id === parseInt(variant2));
+      const selected = compObj && colObj ? lookups.inks.find(i => i.company_name === compObj.name && i.color_name === colObj.name) : null;
       const stock = selected ? selected.quantity : 0;
       if (qtyVal > stock) {
         setError(`الكمية التالفة (${qtyVal} kg) تتجاوز الرصيد المتوفر في المخزن (${stock} kg)`);
@@ -179,9 +187,14 @@ export default function Damaged() {
 
     if (itemType === 'roll') {
       const selected = lookups.rolls.find(r => r.id === parseInt(rollId));
+      if (!selected) { setError('الرول المختار غير موجود في المخزن'); setSubmitting(false); return; }
+      const widthObj = lookups.widths.find(w => w.width === selected.width);
+      const typeObj = lookups.types.find(t => t.name === selected.type_name);
+      if (!widthObj) { setError('فشل العثور على معرّف عرض الرول في المخزن'); setSubmitting(false); return; }
+
       payload.roll_id = parseInt(rollId);
-      payload.variant_id_1 = selected.width_id;
-      payload.variant_id_2 = selected.type_id;
+      payload.variant_id_1 = widthObj.id;
+      payload.variant_id_2 = typeObj ? typeObj.id : null;
     } else {
       payload.variant_id_1 = parseInt(variant1);
       if (variant2) payload.variant_id_2 = parseInt(variant2);

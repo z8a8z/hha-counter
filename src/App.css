@@ -279,9 +279,7 @@ body {
   align-items: center;
   padding: 0 1.5rem;
   border-bottom: 1px solid var(--border);
-  background: rgba(13, 17, 23, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: #FFFFFF;
   position: relative;
   z-index: 40;
 }
@@ -1407,7 +1405,7 @@ input[type="number"] {
   position: absolute;
   cursor: pointer;
   inset: 0;
-  background: rgba(255, 255, 255, 0.12);
+  background: #cbd5e1;
   border-radius: 24px;
   transition: 0.25s;
 }
@@ -1536,11 +1534,10 @@ input[type="number"] {
 
 /* ── Orders table ──────────────────────────────────────────── */
 .orders-table-wrapper {
-  background: rgba(255,255,255,0.018);
-  backdrop-filter: blur(8px);
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  overflow-x: auto;
   box-shadow: var(--shadow-card);
 }
 
@@ -1596,8 +1593,8 @@ input[type="number"] {
 }
 
 .form-modal {
-  background: rgba(17, 24, 39, 0.97);
-  border: 1px solid rgba(255,255,255,0.09);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 1000px;
@@ -1620,18 +1617,15 @@ input[type="number"] {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(30, 41, 59, 0.35);
+  background: var(--bg-elevated);
   flex-shrink: 0;
 }
 
 .form-modal-header h3 {
   font-size: 1.3rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--clr-accent);
   margin: 0;
-  background: linear-gradient(135deg, #a5b4fc, #818cf8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .form-modal-body {
@@ -1644,20 +1638,20 @@ input[type="number"] {
 }
 
 .form-modal-body::-webkit-scrollbar { width: 6px; }
-.form-modal-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+.form-modal-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 .form-modal-footer {
   padding: 1rem 1.75rem;
   border-top: 1px solid var(--border);
-  background: rgba(30,41,59,0.35);
+  background: var(--bg-elevated);
   display: flex;
   justify-content: flex-end;
   flex-shrink: 0;
 }
 
 .form-card-section {
-  background: rgba(30, 41, 59, 0.4);
-  border: 1px solid rgba(255,255,255,0.055);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: 1.5rem;
   display: flex;
@@ -2539,16 +2533,16 @@ td { font-size: 0.88rem; }
 
 .prepared-canvas-row > td {
   padding: 0 !important;
-  border-bottom: 2px solid rgba(99, 102, 241, 0.2);
+  border-bottom: 2px solid rgba(65, 94, 177, 0.15);
 }
 
 .prepared-canvas {
   background: linear-gradient(
     180deg,
-    rgba(99, 102, 241, 0.06) 0%,
-    rgba(13, 17, 23, 0.4) 100%
+    rgba(65, 94, 177, 0.04) 0%,
+    rgba(241, 245, 249, 0.5) 100%
   );
-  border-top: 1px solid rgba(99, 102, 241, 0.18);
+  border-top: 1px solid var(--border);
   padding: 1rem 1.25rem 1.25rem;
   animation: fadeDown 0.22s ease-out;
 }

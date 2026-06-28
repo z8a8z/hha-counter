@@ -46,8 +46,7 @@ function AppShell() {
         {/* Topbar (mobile only brand + hamburger) */}
         <header className="app-topbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <img src="/images/printingslogo.png" alt="Logo" style={{ maxHeight: '32px', maxWidth: '32px', objectFit: 'contain', borderRadius: '4px', background: '#fff', padding: '1px' }} />
-            <span className="topbar-title">HHA</span>
+            <img src="/images/printingslogo.png" alt="Logo" style={{ maxHeight: '44px', maxWidth: '44px', objectFit: 'contain', borderRadius: '4px', background: '#fff', padding: '1px' }} />
           </div>
           <div className="topbar-actions">
             <button
