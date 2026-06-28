@@ -1,8 +1,8 @@
 # HHA — نظام إدارة العداد والعمليات
 
-تطبيق ويب حديث وسهل الاستخدام لإدارة العداد ومتابعة العمليات المختلفة (العداد، المشتريات، الجاهز، السحب، التالف، والتقارير)، مبني باستخدام **React 19 + Vite 6** وقاعدة بيانات **Supabase (PostgreSQL)**.
+تطبيق ويب حديث وسهل الاستخدام لمتابعة العمليات المختلفة (المشتريات، الجاهز، الطلبيات، السحب، التالف، والمخزن، والتقارير)، مبني باستخدام **React 19 + Vite 6** وقاعدة بيانات **Supabase (PostgreSQL)**.
 
-يتميز التطبيق بواجهة مستخدم كاملة باللغة العربية (RTL) مع الحفاظ على الأرقام باللغة الإنجليزية لتسهيل القراءة والعمليات الحسابية، كما يحتوي على نظام تسجيل دخول آمن ولوحة تحكم لإدارة المستخدمين من قِبل المدير (Admin).
+يتميز التطبيق بواجهة مستخدم كاملة باللغة العربية (RTL) مع الحفاظ على الأرقام باللغة الإنجليزية لتسهيل القراءة والعمليات الحسابية، كما يحتوي على نظام تسجيل دخول آمن ولوحة تحكم لإدارة المستخدمين من قِبل المدير (Admin) والمطور (Developer).
 
 ---
 
@@ -11,10 +11,11 @@
 | الميزة | الوصف |
 | :--- | :--- |
 | **واجهة عربية بالكامل** | واجهة مستخدم متناسقة ومصممة للغة العربية باتجاه من اليمين إلى اليسار (RTL). |
-| **تبويبات العمليات** | لوحة تحكم تحتوي على تبويبات للعداد الأساسي، المشتريات، الجاهز، السحب، التالف، والتقارير. |
+| **تبويبات العمليات** | لوحة تحكم تحتوي على تبويبات للمشتريات، الجاهز، الطلبيات، السحب، التالف، المخزن، والتقارير. |
 | **نظام الصلاحيات والدخول** | حماية كاملة للصفحات؛ لا يمكن تصفح النظام إلا بعد تسجيل الدخول. |
 | **إدارة المستخدمين** | يمكن للمدير (Admin) إضافة مستخدمين جدد وتعديل كلمات المرور الخاصة بهم عبر صفحة الإعدادات. |
-| **قاعدة بيانات سحابية** | يتم حفظ قيم العداد وبيانات المستخدمين بشكل فوري وآمن في Supabase. |
+| **صلاحيات مخصصة لكل مستخدم** | يمكن للمطور (Developer) تحديد التبويبات المسموحة لكل مستخدم على حدة وبشكل مرن. |
+| **قاعدة بيانات سحابية** | يتم حفظ بيانات المستخدمين والعمليات بشكل فوري وآمن في Supabase. |
 | **تصميم عصري متجاوب** | واجهة جذابة بتأثيرات بصرية حديثة (Glassmorphism) متوافقة مع جميع مقاسات الشاشات وأجهزة الكمبيوتر. |
 
 ---
@@ -70,26 +71,7 @@ npm install
 3. انقر على **New query** والصق السكربت التالي لتهيئة الجداول والمستخدم الافتراضي:
 
 ```sql
--- 1. إنشاء جدول العداد الأساسي
-CREATE TABLE IF NOT EXISTS public.counter (
-  id         INTEGER PRIMARY KEY DEFAULT 1,
-  value      INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- إدراج الصف الافتراضي للعداد بقيمة صفر
-INSERT INTO public.counter (id, value)
-VALUES (1, 0)
-ON CONFLICT (id) DO NOTHING;
-
--- تفعيل سياسات الحماية لجداول العداد (RLS) وتسهيل الوصول العام
-ALTER TABLE public.counter ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Allow read access" ON public.counter FOR SELECT USING (true);
-CREATE POLICY "Allow insert" ON public.counter FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow update" ON public.counter FOR UPDATE USING (true);
-
--- 2. إنشاء جدول المستخدمين
+-- 1. إنشاء جدول المستخدمين
 CREATE TABLE IF NOT EXISTS public.app_users (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
   username text UNIQUE NOT NULL,
@@ -110,22 +92,38 @@ VALUES
   ('developer', 'f4c0cea75a69f325f85fa6c273d3fae5d0caafa7edd774881d64ed664f3cefeb', 'developer')
 ON CONFLICT (username) DO NOTHING;
 
--- 3. إنشاء جدول صلاحيات الأدوار
-CREATE TABLE IF NOT EXISTS public.role_permissions (
-  role text PRIMARY KEY,
+-- 2. إنشاء جدول صلاحيات المستخدمين المخصصة
+CREATE TABLE IF NOT EXISTS public.user_permissions (
+  user_id uuid PRIMARY KEY REFERENCES public.app_users(id) ON DELETE CASCADE,
   allowed_tabs text[] NOT NULL DEFAULT '{}'
 );
 
 -- تفعيل سياسات الحماية لجدول الصلاحيات
-ALTER TABLE public.role_permissions ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Enable all operations for role_permissions" ON public.role_permissions FOR ALL USING (true) WITH CHECK (true);
+ALTER TABLE public.user_permissions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Enable all operations for user_permissions" ON public.user_permissions FOR ALL USING (true) WITH CHECK (true);
 
--- إدراج الصلاحيات الافتراضية
-INSERT INTO public.role_permissions (role, allowed_tabs) VALUES
-  ('admin', '{"counter", "purchases", "ready", "orders", "withdraw", "damaged", "storage", "report"}'),
-  ('accountant', '{"purchases", "storage", "report"}'),
-  ('user', '{"counter", "ready", "orders"}')
-ON CONFLICT (role) DO UPDATE SET allowed_tabs = EXCLUDED.allowed_tabs;
+-- 3. إنشاء دالة ومشعّل لإنشاء صلاحيات المستخدم الافتراضية تلقائياً عند الإضافة
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.user_permissions (user_id, allowed_tabs)
+  VALUES (
+    NEW.id,
+    CASE 
+      WHEN NEW.role = 'developer' THEN ARRAY['purchases', 'ready', 'orders', 'withdraw', 'damaged', 'storage', 'report']::text[]
+      WHEN NEW.role = 'admin' THEN ARRAY['purchases', 'ready', 'orders', 'withdraw', 'damaged', 'storage', 'report']::text[]
+      WHEN NEW.role = 'accountant' THEN ARRAY['purchases', 'storage', 'report']::text[]
+      ELSE ARRAY['ready', 'orders']::text[]
+    END
+  )
+  ON CONFLICT (user_id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON public.app_users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 ```
 4. اضغط على زر **Run** لتنفيذ السكربت.
 
@@ -180,18 +178,16 @@ hha-sys/
     ├── components/
     │   ├── Header.jsx         # شريط التنقل العلوي (يتضمن شعار HHA وخروج/إعدادات)
     │   ├── Login.jsx          # صفحة تسجيل الدخول باللغة العربية
-    │   ├── Home.jsx           # الصفحة الرئيسية المحتوية على التبويبات الستة
-    │   ├── Counter.jsx        # تبويب العداد الأساسي وتفاعله مع قاعدة البيانات
-    │   ├── Settings.jsx       # صفحة إعدادات النظام للمدير
+    │   ├── Home.jsx           # الصفحة الرئيسية المحتوية على تبويبات النظام
+    │   ├── Settings.jsx       # صفحة إعدادات النظام للمدير والمطور
     │   └── UserManagement.jsx # واجهة إدارة وإضافة المستخدمين وتحديث كلمات المرور
     │
     ├── hooks/
-    │   ├── useCounter.js      # منطق الاتصال بعداد Supabase
     │   └── useAuth.jsx        # سياق (Context) التحقق وصلاحيات المستخدمين
     │
     └── lib/
         ├── supabase.js        # تهيئة والتحقق من اتصال عميل Supabase
-        ├── database.js        # استعلامات قاعدة البيانات للعداد والمستخدمين
+        ├── database.js        # استعلامات قاعدة البيانات للمستخدمين والصلاحيات والبيانات
         ├── auth.js            # شفرة تشفير كلمات المرور باستخدام SHA-256
         └── debug.js           # نظام تسجيل وتتبع الأخطاء البرمجية في المتصفح
 ```

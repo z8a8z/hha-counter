@@ -1,0 +1,99 @@
+{
+  "app_users": [
+    {
+      "id": "40af51f4-b33a-4502-90f6-7ed2fea2deb9",
+      "username": "admin",
+      "password": "f4c0cea75a69f325f85fa6c273d3fae5d0caafa7edd774881d64ed664f3cefeb",
+      "role": "admin",
+      "created_at": "2026-06-17T05:28:27.817054+00:00"
+    },
+    {
+      "id": "7d472135-0c31-485a-8e94-b9bf4f8a3a1b",
+      "username": "azoz",
+      "password": "dfcafae694259c719203dd502252ab975bf6849dc6c8f5fcbe1eda19a821db4d",
+      "role": "accountant",
+      "created_at": "2026-06-17T05:46:40.19738+00:00"
+    },
+    {
+      "id": "1993a7b1-c7a7-47af-91de-55752e8a6b9d",
+      "username": "developer",
+      "password": "03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4",
+      "role": "developer",
+      "created_at": "2026-06-25T07:52:22.767375+00:00"
+    }
+  ],
+  "role_permissions": [
+    {
+      "role": "admin",
+      "allowed_tabs": [
+        "counter",
+        "purchases",
+        "ready",
+        "orders",
+        "withdraw",
+        "damaged",
+        "storage",
+        "report"
+      ]
+    },
+    {
+      "role": "accountant",
+      "allowed_tabs": [
+        "purchases",
+        "storage",
+        "report"
+      ]
+    },
+    {
+      "role": "user",
+      "allowed_tabs": [
+        "counter",
+        "ready",
+        "orders"
+      ]
+    }
+  ],
+  "user_permissions": [
+    {
+      "user_id": "1993a7b1-c7a7-47af-91de-55752e8a6b9d",
+      "allowed_tabs": [
+        "counter",
+        "purchases",
+        "ready",
+        "orders",
+        "withdraw",
+        "damaged",
+        "storage",
+        "report"
+      ]
+    },
+    {
+      "user_id": "7d472135-0c31-485a-8e94-b9bf4f8a3a1b",
+      "allowed_tabs": [
+        "purchases",
+        "storage",
+        "report"
+      ]
+    },
+    {
+      "user_id": "40af51f4-b33a-4502-90f6-7ed2fea2deb9",
+      "allowed_tabs": [
+        "purchases",
+        "ready",
+        "orders",
+        "withdraw",
+        "damaged",
+        "storage",
+        "report"
+      ]
+    }
+  ],
+  "counter": [
+    {
+      "id": 1,
+      "value": 88,
+      "created_at": "2026-06-17T02:20:05.751051+00:00",
+      "updated_at": "2026-06-24T11:46:40.205+00:00"
+    }
+  ]
+}

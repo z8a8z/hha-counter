@@ -1779,6 +1779,176 @@ td { font-size: 0.88rem; }
 .edit-password-form { display: flex; gap: 0.5rem; }
 .edit-password-form input { padding: 0.38rem; font-size: 0.82rem; }
 
+/* ── Authorities panel (developer-only per-user permissions) ── */
+.authorities-panel {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--border);
+  padding: 1.25rem;
+  border-radius: var(--radius-sm);
+  margin-top: 1.5rem;
+}
+
+.authorities-panel h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  color: var(--clr-accent-light);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.authorities-panel > p {
+  opacity: 0.75;
+  font-size: 0.88rem;
+  margin-bottom: 1.25rem;
+}
+
+.authorities-user-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.user-selector-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.03);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  color: var(--txt-secondary);
+}
+
+.user-selector-item:hover {
+  border-color: var(--clr-accent);
+  color: var(--txt-primary);
+  background: rgba(255,255,255,0.06);
+}
+
+.user-selector-item.active {
+  border-color: var(--clr-accent);
+  background: rgba(var(--clr-accent-rgb, 99,102,241), 0.15);
+  color: var(--clr-accent-light);
+  font-weight: 600;
+}
+
+.authorities-grid {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.authorities-grid table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.authorities-grid th {
+  padding: 0.75rem 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.authorities-grid td {
+  padding: 0.75rem 1rem;
+  text-align: center;
+}
+
+.authorities-grid input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--clr-accent);
+}
+
+.authorities-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ── Delete / Danger button ───────────────────────────────── */
+.btn-danger {
+  background: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.btn-danger:hover {
+  background: rgba(231, 76, 60, 0.3);
+  border-color: #e74c3c;
+}
+
+/* ── Role badges ──────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.badge.developer {
+  background: rgba(155, 89, 182, 0.18);
+  color: #c39bd3;
+  border: 1px solid rgba(155, 89, 182, 0.3);
+}
+
+.badge.admin {
+  background: rgba(52, 152, 219, 0.18);
+  color: #85c1e9;
+  border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.badge.user {
+  background: rgba(149, 165, 166, 0.18);
+  color: #b2bec3;
+  border: 1px solid rgba(149, 165, 166, 0.3);
+}
+
+/* ── Success / Error banners ──────────────────────────────── */
+.success-banner {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.3);
+  padding: 0.65rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.88rem;
+}
+
+.error-banner {
+  background: rgba(231, 76, 60, 0.15);
+  color: #e74c3c;
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  padding: 0.65rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.88rem;
+}
+
+.user-management .created-date {
+  font-size: 0.8rem;
+  color: var(--txt-muted);
+  direction: ltr;
+  unicode-bidi: embed;
+}
+
 /* ── Print settings dashboard ──────────────────────────────── */
 .print-settings-dashboard {
   display: grid;

@@ -1,14 +1,3 @@
-## Table `counter`
-
-### Columns
-
-| Name | Type | Constraints |
-|------|------|-------------|
-| `id` | `int4` | Primary |
-| `value` | `int4` |  |
-| `created_at` | `timestamptz` |  |
-| `updated_at` | `timestamptz` |  |
-
 ## Table `app_users`
 
 ### Columns
@@ -295,12 +284,12 @@
 | `settings` | `jsonb` |  |
 | `updated_at` | `timestamptz` |  |
 
-## Table `role_permissions`
+## Table `user_permissions`
 
 ### Columns
 
 | Name | Type | Constraints |
 |------|------|-------------|
-| `role` | `text` | Primary |
+| `user_id` | `uuid` | Primary |
 | `allowed_tabs` | `_text` |  |
 

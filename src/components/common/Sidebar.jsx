@@ -38,7 +38,7 @@ export default function Sidebar({ isOpen, onClose }) {
       {/* Navigation */}
       <nav className="sidebar-nav">
         <span className="sidebar-section-label">القائمة الرئيسية</span>
-        {NAV_ITEMS.filter(item => !item.adminOnly || user?.role === 'admin').map(item => (
+        {NAV_ITEMS.filter(item => !item.adminOnly || user?.role === 'admin' || user?.role === 'developer').map(item => (
           <button
             key={item.path}
             className={`sidebar-link ${location.pathname === item.path ? 'active' : ''}`}
@@ -56,7 +56,7 @@ export default function Sidebar({ isOpen, onClose }) {
           <div className="sidebar-avatar">{initials}</div>
           <div className="sidebar-user-info">
             <div className="sidebar-user-name">{user?.username}</div>
-            <div className="sidebar-user-role">{user?.role === 'admin' ? 'مدير النظام' : 'مستخدم'}</div>
+            <div className="sidebar-user-role">{user?.role === 'developer' ? 'مطور النظام' : user?.role === 'admin' ? 'مدير النظام' : user?.role === 'accountant' ? 'محاسب' : 'مستخدم'}</div>
           </div>
           <button
             className="sidebar-logout-btn"

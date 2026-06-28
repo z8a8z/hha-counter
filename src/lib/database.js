@@ -19,78 +19,6 @@ import { supabase, validateEnv } from './supabase.js';
 import { debug } from './debug.js';
 
 const MODULE = 'Database';
-const TABLE = 'counter';
-
-/**
- * Fetches the current counter value from the DB.
- * If the row doesn't exist yet, returns 0.
- */
-export async function getCounterValue() {
-  const { valid, missing } = validateEnv();
-  if (!valid) {
-    debug.error(MODULE, 'getCounterValue – env not configured', { missing });
-    return { data: null, error: `Missing env vars: ${missing.join(', ')}` };
-  }
-  debug.db(MODULE, 'Fetching counter value from "counter" table…');
-  const { data, error } = await supabase
-    .from(TABLE)
-    .select('value')
-    .eq('id', 1)
-    .maybeSingle();
-  if (error) {
-    debug.error(MODULE, 'Failed to fetch counter value', error);
-    return { data: null, error: error.message };
-  }
-  const value = data ? data.value : 0;
-  debug.db(MODULE, 'Counter value fetched', { value });
-  return { data: value, error: null };
-}
-
-export async function initCounterRow() {
-  const { valid, missing } = validateEnv();
-  if (!valid) {
-    debug.error(MODULE, 'initCounterRow – env not configured', { missing });
-    return { error: `Missing env vars: ${missing.join(', ')}` };
-  }
-  debug.db(MODULE, 'Initializing counter row…');
-  const { data: existing } = await supabase
-    .from(TABLE)
-    .select('id')
-    .eq('id', 1)
-    .maybeSingle();
-  if (existing) {
-    debug.db(MODULE, 'Counter row already exists, skipping init');
-    return { error: null };
-  }
-  const { error } = await supabase
-    .from(TABLE)
-    .insert({ id: 1, value: 0 });
-  if (error) {
-    debug.error(MODULE, 'Failed to insert counter row', error);
-    return { error: error.message };
-  }
-  debug.info(MODULE, 'Counter row created with value 0');
-  return { error: null };
-}
-
-export async function updateCounterValue(newValue) {
-  const { valid, missing } = validateEnv();
-  if (!valid) {
-    debug.error(MODULE, 'updateCounterValue – env not configured', { missing });
-    return { error: `Missing env vars: ${missing.join(', ')}` };
-  }
-  debug.db(MODULE, 'Updating counter value', { newValue });
-  const { error } = await supabase
-    .from(TABLE)
-    .update({ value: newValue, updated_at: new Date().toISOString() })
-    .eq('id', 1);
-  if (error) {
-    debug.error(MODULE, 'Failed to update counter value', error);
-    return { error: error.message };
-  }
-  debug.db(MODULE, 'Counter value updated successfully', { newValue });
-  return { error: null };
-}
 
 // ── Auth & User Management ───────────────────────────────────
 
@@ -118,10 +46,29 @@ export async function getUsers() {
 }
 
 export async function addUser(username, passwordHash, role = 'user') {
+  // Insert user into app_users
+  const { data, error } = await supabase
+    .from('app_users')
+    .insert({ username, password: passwordHash, role })
+    .select('id')
+    .single();
+  if (error) { debug.error(MODULE, 'addUser error', error); return { error: error.message }; }
+  // Auto-create empty user_permissions row
+  if (data) {
+    const { error: permErr } = await supabase
+      .from('user_permissions')
+      .insert({ user_id: data.id, allowed_tabs: [] });
+    if (permErr) { debug.error(MODULE, 'addUser – failed to create permissions row', permErr); }
+  }
+  return { error: null };
+}
+
+export async function deleteUser(userId) {
   const { error } = await supabase
     .from('app_users')
-    .insert({ username, password: passwordHash, role });
-  if (error) { debug.error(MODULE, 'addUser error', error); return { error: error.message }; }
+    .delete()
+    .eq('id', userId);
+  if (error) { debug.error(MODULE, 'deleteUser error', error); return { error: error.message }; }
   return { error: null };
 }
 
@@ -143,20 +90,31 @@ export async function updateUserRole(userId, newRole) {
   return { error: null };
 }
 
-export async function getRolePermissions() {
+// ── Per-User Permissions (Authorities) ───────────────────────
+
+export async function getUserPermissions(userId) {
   const { data, error } = await supabase
-    .from('role_permissions')
-    .select('role, allowed_tabs');
-  if (error) { debug.error(MODULE, 'getRolePermissions error', error); return { data: null, error: error.message }; }
+    .from('user_permissions')
+    .select('allowed_tabs')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) { debug.error(MODULE, 'getUserPermissions error', error); return { data: null, error: error.message }; }
+  return { data: data ? data.allowed_tabs : [], error: null };
+}
+
+export async function getAllUserPermissions() {
+  const { data, error } = await supabase
+    .from('user_permissions')
+    .select('user_id, allowed_tabs');
+  if (error) { debug.error(MODULE, 'getAllUserPermissions error', error); return { data: null, error: error.message }; }
   return { data, error: null };
 }
 
-export async function updateRolePermissions(role, allowedTabs) {
+export async function updateUserPermissions(userId, allowedTabs) {
   const { error } = await supabase
-    .from('role_permissions')
-    .update({ allowed_tabs: allowedTabs })
-    .eq('role', role);
-  if (error) { debug.error(MODULE, 'updateRolePermissions error', error); return { error: error.message }; }
+    .from('user_permissions')
+    .upsert({ user_id: userId, allowed_tabs: allowedTabs }, { onConflict: 'user_id' });
+  if (error) { debug.error(MODULE, 'updateUserPermissions error', error); return { error: error.message }; }
   return { error: null };
 }
 
