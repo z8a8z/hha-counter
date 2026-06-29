@@ -24,7 +24,7 @@ const defaultSettings = {
   },
   workOrder: {
     title: 'أمر تشغيل وإنتاج',
-    notes: 'تنبيه للإنتاج والورشة: يرجى التحقق من أبعاد الميكرون قبل البدء.'
+    notes: 'تنبيه: يرجى التحقق من أبعاد الميكرون قبل البدء.'
   }
 };
 
@@ -56,11 +56,35 @@ export const PrintTemplates = {
   orderWork(order, formDetails, customSettings = {}) {
     const s = { ...defaultSettings.general, ...customSettings.general };
     const o = { ...defaultSettings.workOrder, ...customSettings.workOrder };
+    const printedBy = customSettings.printedBy || 'مجهول';
+    const createdBy = order.created_by || 'مجهول';
     
     const formattedDate = new Date(order.order_date).toLocaleDateString('ar-EG');
     const jobTypes = Array.isArray(formDetails.job_types) 
       ? formDetails.job_types.join(' - ') 
       : (formDetails.job_types || '—');
+
+    const isPrintActive = Array.isArray(formDetails.job_types)
+      ? formDetails.job_types.includes('طباعة')
+      : false;
+
+    const formatVal = (val, suffix = '') => {
+      if (val === null || val === undefined || String(val).trim() === '' || String(val).toLowerCase() === 'null') {
+        return '—';
+      }
+      return val + suffix;
+    };
+
+    const formatWidthVal = (val, suffix = '') => {
+      if (val === null || val === undefined || String(val).trim() === '' || String(val).toLowerCase() === 'null') {
+        return '—';
+      }
+      const isDeviating = formDetails.production_width && parseFloat(val) !== parseFloat(formDetails.production_width);
+      if (isDeviating) {
+        return `<span style="color: red; font-weight: bold; text-decoration: underline;">${val}${suffix}</span>`;
+      }
+      return val + suffix;
+    };
 
     return `
       <html dir="rtl" lang="ar">
@@ -87,63 +111,110 @@ export const PrintTemplates = {
               align-items: center;
               border-bottom: ${s.lineWidthFree}px solid #000;
               padding-bottom: 8px;
-              margin-bottom: 12px;
+              margin-bottom: 15px;
             }
-            .header-info h1 { margin: 0; font-size: 18pt; font-weight: 900; }
-            .header-info h2 { margin: 3px 0 0 0; font-size: 12pt; font-weight: bold; }
+            .header-title {
+              font-size: 18pt;
+              font-weight: 900;
+              text-align: right;
+            }
             .header-logo {
-              max-height: 60px;
+              max-height: 70px;
               max-width: 150px;
               object-fit: contain;
             }
-            .header-logo-text {
-              font-size: 16pt;
-              font-weight: bold;
-              border: ${s.lineWidthTable}px solid #000;
-              padding: 4px 10px;
-            }
             
-            .meta-grid {
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 8px;
-              margin-bottom: 12px;
+            .meta-table {
+              width: 100%;
+              border-collapse: collapse;
               border: ${s.lineWidthTable}px solid #000;
-              padding: 8px;
+              margin-bottom: 15px;
+            }
+            .meta-col {
+              width: 50%;
+              padding: 6px 12px;
+              vertical-align: top;
+            }
+            .meta-col:first-child {
+              border-left: ${s.lineWidthTable}px solid #000;
             }
             .meta-item {
-              font-size: 10.5pt;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 6px;
+              font-size: 11pt;
             }
-            .meta-item strong {
-              display: inline-block;
-              width: 120px;
+            .meta-item:last-child {
+              margin-bottom: 0;
+            }
+            .meta-label {
+              font-weight: bold;
+              text-align: right;
+            }
+            .meta-value {
+              text-align: left;
             }
             
             .section-title {
-              font-size: 11pt;
-              font-weight: 900;
-              background-color: #f0f0f0;
-              border-bottom: ${s.lineWidthFree}px solid #000;
-              padding: 4px 8px;
-              margin-top: 12px;
-              margin-bottom: 6px;
+              text-align: center;
+              font-size: 12pt;
+              font-weight: bold;
+              margin-top: 15px;
+              margin-bottom: 10px;
+              padding: 6px 0;
+              border-top: 3px double #000;
+              border-bottom: 1px solid #000;
+              background: none;
             }
             
             .data-table {
               width: 100%;
               border-collapse: collapse;
-              margin-bottom: 10px;
+              margin-bottom: 15px;
             }
             .data-table th, .data-table td {
               border: ${s.lineWidthTable}px solid #000;
               padding: 6px 8px;
-              text-align: right;
               font-size: 10.5pt;
+              vertical-align: middle;
             }
             .data-table th {
               background-color: #fafafa;
               font-weight: bold;
-              width: 200px;
+              width: 210px;
+              text-align: right;
+            }
+            .data-table td {
+              text-align: center;
+              background-color: #fff;
+            }
+            
+            .wrap-container {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              width: 100%;
+            }
+            .wrap-text {
+              flex-grow: 1;
+              text-align: center;
+            }
+            .wrap-img-box {
+              border: 1px solid #ddd;
+              border-radius: 4px;
+              background: #fff;
+              padding: 2px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 55px;
+              width: 55px;
+            }
+            .wrap-img {
+              max-height: 50px;
+              max-width: 50px;
+              object-fit: contain;
             }
             
             .warning-box {
@@ -152,43 +223,76 @@ export const PrintTemplates = {
               margin-top: 15px;
               font-size: 11pt;
               font-weight: bold;
+              text-align: center;
             }
-            
-            .footer {
-              position: absolute;
-              bottom: 12mm;
-              left: 12mm;
-              right: 12mm;
+            .footer-info-line {
+              margin-top: 15px;
               text-align: center;
               font-size: 9pt;
-              border-top: ${s.lineWidthFree}px solid #000;
-              padding-top: 10px;
+              color: #444;
+              border-top: 1px solid #ddd;
+              padding-top: 6px;
             }
           </style>
         </head>
         <body>
           <div class="header">
-            <div class="header-info">
-              <h1>أمر تشغيل الورشة</h1>
-              <h2>${o.title} - رقم #${order.id}</h2>
-              <div style="font-size: 9pt; margin-top: 2px;">الهاتف: ${s.phone} | الفني المسؤول: ${formDetails.technician || '—'}</div>
+            <div class="header-title">
+              ${o.title} - رقم #${order.id}
             </div>
             <div>
               <img src="/images/printingslogo.png" class="header-logo" alt="logo">
             </div>
           </div>
           
-          <div class="meta-grid">
-            <div class="meta-item"><strong>اسم العميل:</strong> ${order.customer_name}</div>
-            <div class="meta-item"><strong>التاريخ:</strong> ${formattedDate}</div>
-            <div class="meta-item"><strong>مساعد الفني:</strong> ${formDetails.assistant_technician || '—'}</div>
-            <div class="meta-item"><strong>الشفت:</strong> ${formDetails.shift || '—'}</div>
-            <div class="meta-item"><strong>المنظم:</strong> ${formDetails.organizer_name || '—'}</div>
-            <div class="meta-item"><strong>رقم الطلب الأساسي:</strong> #${order.id}</div>
-          </div>
+          <table class="meta-table">
+            <tr>
+              <td class="meta-col">
+                <div class="meta-item">
+                  <span class="meta-label">اسم العميل:</span>
+                  <span class="meta-value">${order.customer_name}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">الفني المسؤول:</span>
+                  <span class="meta-value">${formDetails.technician || '—'}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">مساعد الفني:</span>
+                  <span class="meta-value">${formDetails.assistant_technician || '—'}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">المنظم:</span>
+                  <span class="meta-value">${formDetails.organizer_name || '—'}</span>
+                </div>
+              </td>
+              <td class="meta-col">
+                <div class="meta-item">
+                  <span class="meta-label">التاريخ:</span>
+                  <span class="meta-value">${formattedDate}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">الشفت:</span>
+                  <span class="meta-value">${formDetails.shift || '—'}</span>
+                </div>
+                <div class="meta-item" style="align-items: flex-start;">
+                  <span class="meta-label">رقم الطلب<br>الأساسي:</span>
+                  <span class="meta-value" style="font-size: 14pt; font-weight: bold; margin-top: 4px;">#${order.id}</span>
+                </div>
+                ${formDetails.fasoon ? `
+                  <div class="meta-item" style="justify-content: center; margin-top: 8px;">
+                    <span style="color: red; font-weight: bold; font-size: 13pt; border: 2px solid red; padding: 2px 8px; border-radius: 4px;">⚠️ فأسون</span>
+                  </div>
+                ` : ''}
+              </td>
+            </tr>
+          </table>
           
           <div class="section-title">القياسات الهندسية وكمية المنتج</div>
           <table class="data-table">
+            <tr>
+              <th>القطاع</th>
+              <td>${formDetails.sector || '—'}</td>
+            </tr>
             <tr>
               <th>الوصف الوظيفي للمنتج</th>
               <td>${formDetails.functional_desc || '—'}</td>
@@ -199,68 +303,95 @@ export const PrintTemplates = {
             </tr>
             <tr>
               <th>الكمية المطلوبة للإنتاج (kg)</th>
-              <td><strong>${formDetails.weight_kg || '0'} kg</strong></td>
+              <td><strong>kg ${formDetails.weight_kg || '0'}</strong></td>
             </tr>
             <tr>
               <th>قياسات الكيس المعتمدة</th>
               <td><span style="font-size: 12pt;"><strong>طول: ${formDetails.production_length || '0'} mm × عرض: ${formDetails.production_width || '0'} mm</strong></span></td>
             </tr>
-            <tr>
-              <th>مصدر التصميم والكليشة</th>
-              <td>التصميم: ${formDetails.design_source || '—'} | الكليشة: ${formDetails.clishe_source || '—'}</td>
-            </tr>
+            ${isPrintActive ? `
+              <tr>
+                <th>مصدر التصميم والكليشة</th>
+                <td>التصميم: ${formDetails.design_source || '—'} | الكليشة: ${formDetails.clishe_source || '—'}</td>
+              </tr>
+            ` : ''}
           </table>
           
           <div class="section-title">مواصفات الفلم البلاستيكي والطباعة واللف</div>
           <table class="data-table">
-            <tr>
-              <th>مادة الميكرون المحددة (Mic)</th>
-              <td><strong>المادة: ${formDetails.material || '—'} | السماكة: ${formDetails.mic_value || '0'} Mic</strong></td>
-            </tr>
-            <tr>
-              <th>ألوان الطباعة ونوعها</th>
-              <td>النوع: ${formDetails.print_style || '—'} (${formDetails.print_subtype || '—'}) | <strong>عدد الألوان: ${formDetails.print_color_count || '0'} ألوان</strong></td>
-            </tr>
-            <tr>
-              <th>كمية الطبع / قياس المواد</th>
-              <td>الكمية: ${formDetails.print_quantity || '0'} | قياس المواد: ${formDetails.material_measure || '0'} mm</td>
-            </tr>
+            ${isPrintActive ? `
+              <tr>
+                <th>تفاصيل الطباعة</th>
+                <td>
+                  <table style="width: 100%; border-collapse: collapse; margin: 0; font-size: 10.5pt; background: transparent;">
+                    <tr>
+                      <td style="border: none; padding: 4px 0; text-align: right; width: 50%;"><strong>نوع الطباعة:</strong> ${formDetails.print_subtype || '—'}</td>
+                      <td style="border: none; padding: 4px 0; text-align: right; width: 50%;"><strong>النمط (طباعة):</strong> ${formDetails.print_style || '—'}</td>
+                    </tr>
+                    <tr>
+                      <td style="border: none; padding: 4px 0; text-align: right;"><strong>المواد:</strong> ${formDetails.material || '—'}</td>
+                      <td style="border: none; padding: 4px 0; text-align: right;"><strong>السماكة (MIC):</strong> ${formDetails.mic_value || '0'} Mic</td>
+                    </tr>
+                    <tr>
+                      <td style="border: none; padding: 4px 0; text-align: right;"><strong>كمية الطبع:</strong> ${formDetails.print_quantity || '—'} kg</td>
+                      <td style="border: none; padding: 4px 0; text-align: right;"><strong>عدد ألوان الطباعة:</strong> ${formDetails.print_color_count || '0'} ألوان</td>
+                    </tr>
+                    <tr>
+                      <td style="border: none; padding: 4px 0; text-align: right;" colspan="2"><strong>قياس المواد:</strong> ${formatWidthVal(formDetails.material_measure, ' mm')}</td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            ` : ''}
             <tr>
               <th>اللامنيشن والغراء الفني</th>
               <td>
-                الصمغ: ${formDetails.glue_type || '—'} |
-                اللامنيشن: <strong>${formDetails.lamination_needed ? 'نعم - يحتاج' : 'لا يحتاج'}</strong>
-                ${formDetails.lamination_mat1 ? `<br>• مادة 1: ${formDetails.lamination_mat1} (${formDetails.lamination_meas1} mm، ${formDetails.lamination_mic1} Mic)` : ''}
-                ${formDetails.lamination_mat2 ? `<br>• مادة 2: ${formDetails.lamination_mat2} (${formDetails.lamination_meas2} mm، ${formDetails.lamination_mic2} Mic)` : ''}
+                ${formDetails.lamination_needed ? `
+                  الصمغ: ${formDetails.glue_type || '—'}
+                  ${formDetails.lamination_mat1 ? `<br>• مادة 1: ${formDetails.lamination_mat1} (${formatWidthVal(formDetails.lamination_meas1, ' mm')}، ${formatVal(formDetails.lamination_mic1, ' Mic')})` : ''}
+                  ${formDetails.lamination_mat2 ? `<br>• مادة 2: ${formDetails.lamination_mat2} (${formatWidthVal(formDetails.lamination_meas2, ' mm')}  ، ${formatVal(formDetails.lamination_mic2, ' Mic')})` : ''}
+                  ${formDetails.lamination_mat3 ? `<br>• مادة 3: ${formDetails.lamination_mat3} (${formatWidthVal(formDetails.lamination_meas3, ' mm')}  ، ${formatVal(formDetails.lamination_mic3, ' Mic')})` : ''}
+                ` : 'لا يوجد'}
               </td>
             </tr>
             <tr>
-              <th>تقطيع وتغليف نهائي</th>
-              <td>تقطيع: ${formDetails.cutting_needed ? 'نعم' : 'لا'} | تغليف: ${formDetails.packaging_needed ? 'نعم' : 'لا'}</td>
+              <th>تقطيع نهائي</th>
+              <td>${formDetails.job_types && (formDetails.job_types.includes('قطع') || formDetails.job_types.includes('تقطيع')) ? 'نعم' : 'لا'}</td>
+            </tr>
+            <tr>
+              <th>تغليف نهائي</th>
+              <td>${formDetails.job_types && formDetails.job_types.includes('تغليف') ? 'نعم' : 'لا'}</td>
             </tr>
             <tr>
               <th>مواصفات بكرة اللف النهائية</th>
               <td>
-                شكل اللف: <strong>${formDetails.wrap_shape === 'a' ? 'a: عدل' : formDetails.wrap_shape === 'b' ? 'b: عكس' : formDetails.wrap_shape || '—'}</strong> | قطر: ${formDetails.wrap_diameter || '0'} mm | وزن: ${formDetails.wrap_weight || '0'} kg
-                ${formDetails.wrap_shape === 'a' || formDetails.wrap_shape === 'b' ? `
-                  <div style="margin-top: 6px;">
-                    <img src="/images/wrap${formDetails.wrap_shape}.png" alt="wrap shape" style="height: 55px; border: 1px solid #ddd; border-radius: 4px; background: #fff; padding: 2px;" />
+                <div class="wrap-container">
+                  <div class="wrap-text">
+                    شكل اللف: <strong>${formDetails.wrap_shape === 'a' ? 'عدل' : formDetails.wrap_shape === 'b' ? 'عكس' : (formDetails.wrap_shape || '—')}</strong> | قطر: ${formDetails.wrap_diameter || '0'} mm | وزن: ${formDetails.wrap_weight || '0'} kg
                   </div>
-                ` : ''}
+                  ${formDetails.wrap_shape === 'a' || formDetails.wrap_shape === 'b' ? `
+                    <div class="wrap-img-box">
+                      <img src="/images/wrap${formDetails.wrap_shape}.png" alt="wrap shape" class="wrap-img" />
+                    </div>
+                  ` : ''}
+                </div>
               </td>
             </tr>
             <tr>
-              <th>تعليمات التسليم للورشة</th>
-              <td>مكان التسليم: ${formDetails.delivery_location || '—'}</td>
+              <th>مكان التسليم</th>
+              <td>${formDetails.delivery_location || ''}</td>
+            </tr>
+            <tr>
+              <th>تفاصيل أخرى</th>
+              <td>${formDetails.extra_details || '—'}</td>
             </tr>
           </table>
 
           <div class="warning-box">
             ${o.notes}
           </div>
-          
-          <div class="footer">
-            <div style="font-size: 8pt; color: #666;">نظام إدارة التشغيل - مطبعة ${s.factoryName}</div>
+          <div class="footer-info-line">
+            أنشئ بواسطة: ${createdBy} | طبع بواسطة: ${printedBy}
           </div>
         </body>
       </html>

@@ -680,6 +680,46 @@ export async function createFullOrder(orderId, formData) {
   return { data, error: null };
 }
 
+export async function updateFullOrder(orderId, formData) {
+  const { valid, missing } = validateEnv();
+  if (!valid) return { error: 'Env not configured' };
+  if (!orderId) return { error: 'Missing orderId' };
+
+  // Check if order details record exists
+  const { data: existing, error: checkError } = await supabase
+    .from('order_forms')
+    .select('id')
+    .eq('order_id', orderId)
+    .maybeSingle();
+
+  if (checkError) {
+    debug.error(MODULE, 'updateFullOrder check error', checkError);
+    return { error: checkError.message };
+  }
+
+  if (existing) {
+    // Update existing record
+    const { error } = await supabase
+      .from('order_forms')
+      .update(formData)
+      .eq('order_id', orderId);
+    if (error) {
+      debug.error(MODULE, 'updateFullOrder update error', error);
+      return { error: error.message };
+    }
+  } else {
+    // Insert new record
+    const { error } = await supabase
+      .from('order_forms')
+      .insert({ order_id: orderId, ...formData });
+    if (error) {
+      debug.error(MODULE, 'updateFullOrder insert error', error);
+      return { error: error.message };
+    }
+  }
+  return { error: null };
+}
+
 export async function getOrderForm(orderId) {
   const { valid, missing } = validateEnv();
   if (!valid) return { data: null, error: 'Env not configured' };
@@ -750,6 +790,43 @@ export async function addDamagedRecord(record) {
     return { data: null, error: error.message };
   }
   return { data, error: null };
+}
+
+export async function getAutofillData() {
+  const { valid, missing } = validateEnv();
+  if (!valid) return { data: null, error: 'Env not configured' };
+  
+  const { data, error } = await supabase
+    .from('order_forms')
+    .select('technician, assistant_technician, organizer_name, customer_phone, orders(customer_name)');
+
+  if (error) {
+    debug.error(MODULE, 'getAutofillData error', error);
+    return { data: null, error: error.message };
+  }
+
+  const technicians = [...new Set(data.map(item => item.technician).filter(Boolean))];
+  const assistants = [...new Set(data.map(item => item.assistant_technician).filter(Boolean))];
+  const organizers = [...new Set(data.map(item => item.organizer_name).filter(Boolean))];
+  
+  const customerMap = {};
+  data.forEach(item => {
+    const name = item.orders?.customer_name;
+    const phone = item.customer_phone;
+    if (name && phone) {
+      customerMap[name] = phone;
+    }
+  });
+
+  return {
+    data: {
+      technicians,
+      assistants,
+      organizers,
+      customers: customerMap
+    },
+    error: null
+  };
 }
 
 

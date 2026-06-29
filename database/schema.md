@@ -241,15 +241,15 @@
 | `job_types` | `_text` |  |
 | `production_length` | `numeric` |  |
 | `production_width` | `numeric` |  |
-| `design_source` | `text` |  |
-| `clishe_source` | `text` |  |
-| `print_style` | `text` |  |
-| `print_subtype` | `text` |  |
-| `material` | `text` |  |
-| `mic_value` | `numeric` |  |
-| `print_quantity` | `int4` |  |
-| `print_color_count` | `int4` |  |
-| `material_measure` | `numeric` |  |
+| `design_source` | `text` |  Nullable |
+| `clishe_source` | `text` |  Nullable |
+| `print_style` | `text` |  Nullable |
+| `print_subtype` | `text` |  Nullable |
+| `material` | `text` |  Nullable |
+| `mic_value` | `numeric` |  Nullable |
+| `print_quantity` | `int4` |  Nullable |
+| `print_color_count` | `int4` |  Nullable |
+| `material_measure` | `numeric` |  Nullable |
 | `lamination_needed` | `bool` |  |
 | `lamination_mat1` | `text` |  Nullable |
 | `lamination_meas1` | `numeric` |  Nullable |
@@ -260,7 +260,7 @@
 | `lamination_mat3` | `text` |  Nullable |
 | `lamination_meas3` | `numeric` |  Nullable |
 | `lamination_mic3` | `numeric` |  Nullable |
-| `glue_type` | `text` |  |
+| `glue_type` | `text` |  Nullable |
 | `cutting_needed` | `bool` |  |
 | `packaging_needed` | `bool` |  |
 | `wrap_shape` | `text` |  |
@@ -273,6 +273,7 @@
 | `extra_details` | `text` |  |
 | `created_at` | `timestamptz` |  |
 | `updated_at` | `timestamptz` |  |
+| `sector` | `text` |  Nullable |
 
 ## Table `print_settings`
 

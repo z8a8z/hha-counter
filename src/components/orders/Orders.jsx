@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getOrders, createOrder, createFullOrder, updateOrder, deleteOrder, getReadyOrders, getOrderForm, getPrintSettings, deleteReadyOrder } from '../../lib/database.js';
+import { getOrders, createOrder, createFullOrder, updateOrder, updateFullOrder, deleteOrder, getReadyOrders, getOrderForm, getPrintSettings, deleteReadyOrder, getAutofillData } from '../../lib/database.js';
 import OrderForm from './OrderForm.jsx';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import { usePrint } from '../../hooks/usePrint.js';
@@ -127,7 +127,7 @@ export default function Orders({ onStatusChange }) {
     }
     const html = type === 'management' 
       ? PrintTemplates.orderManagement(order, formRes.data, settingsRes.data || {})
-      : PrintTemplates.orderWork(order, formRes.data, settingsRes.data || {});
+      : PrintTemplates.orderWork(order, formRes.data, { ...(settingsRes.data || {}), printedBy: user?.username || 'مجهول' });
     printHtml(html);
   };
 
@@ -148,6 +148,12 @@ export default function Orders({ onStatusChange }) {
   // Form / dialog state
   const [showForm, setShowForm] = useState(false);
   const [editingOrder, setEditingOrder] = useState(null);
+  const [autofillData, setAutofillData] = useState({
+    technicians: [],
+    assistants: [],
+    organizers: [],
+    customers: {}
+  });
 
   // Fields
   const [customerName, setCustomerName] = useState('');
@@ -165,7 +171,11 @@ export default function Orders({ onStatusChange }) {
   const fetchAll = async () => {
     setLoading(true);
     setError('');
-    const [ordersRes, readyRes] = await Promise.all([getOrders(), getReadyOrders()]);
+    const [ordersRes, readyRes, autofillRes] = await Promise.all([
+      getOrders(),
+      getReadyOrders(),
+      getAutofillData()
+    ]);
     setLoading(false);
     if (ordersRes.error) {
       setError('حدث خطأ أثناء تحميل الطلبيات: ' + ordersRes.error);
@@ -174,6 +184,9 @@ export default function Orders({ onStatusChange }) {
     }
     if (!readyRes.error) {
       setReadyOrders(readyRes.data || []);
+    }
+    if (!autofillRes.error && autofillRes.data) {
+      setAutofillData(autofillRes.data);
     }
   };
 
@@ -186,8 +199,20 @@ export default function Orders({ onStatusChange }) {
     setShowForm(true);
   };
 
-  const openEditForm = (order) => {
-    setEditingOrder(order);
+  const openEditForm = async (order) => {
+    setLoading(true);
+    setError('');
+    const { data, error } = await getOrderForm(order.id);
+    setLoading(false);
+    if (error) {
+      setError('فشل تحميل تفاصيل الاستمارة: ' + error);
+      return;
+    }
+    setEditingOrder({
+      ...(data || {}),
+      ...order,
+      id: order.id
+    });
     setCustomerName(order.customer_name);
     setOrderDate(order.order_date);
     setDetails(order.details || '');
@@ -368,41 +393,71 @@ export default function Orders({ onStatusChange }) {
 
         {/* Modal / Form Overlay */}
         {showForm && (
-  <OrderForm
-    onCancel={() => setShowForm(false)}
-    onSuccess={async (formData) => {
-      setLoading(true);
-      setError('');
-      setSuccessMsg('');
-      // Create base order using minimal fields
-      const { data: baseData, error: baseErr } = await createOrder(
-        formData.customer_name || formData.organizer_name || '',
-        formData.order_date || new Date().toISOString().split('T')[0],
-        formData.extra_details || '',
-        'pending',
-        user?.username || 'مجهول'
-      );
-      if (baseErr) {
-        setError('فشل إنشاء الطلبية الأساسية: ' + baseErr);
-        setLoading(false);
-        return;
-      }
-      const orderId = baseData.id;
-      // Extract fields that do not exist on the order_forms database table
-      const { customer_name, order_date, ...detailedFields } = formData;
-      // Save full order form data
-      const { data: fullData, error: fullErr } = await createFullOrder(orderId, detailedFields);
-      setLoading(false);
-      if (fullErr) {
-        setError('فشل حفظ بيانات الاستمارة: ' + fullErr);
-      } else {
-        setSuccessMsg('تم إنشاء الطلبية بنجاح');
-        setShowForm(false);
-        fetchAll();
-      }
-    }}
-  />
-)}
+          <OrderForm
+            onCancel={() => {
+              setShowForm(false);
+              setEditingOrder(null);
+            }}
+            initialData={editingOrder}
+            autofillData={autofillData}
+            onSuccess={async (formData) => {
+              setLoading(true);
+              setError('');
+              setSuccessMsg('');
+              
+              if (editingOrder) {
+                // Update mode
+                const { error: baseErr } = await updateOrder(editingOrder.id, {
+                  customer_name: formData.customer_name || formData.organizer_name || '',
+                  order_date: formData.order_date || new Date().toISOString().split('T')[0],
+                  details: formData.extra_details || '',
+                  status: editingOrder.status
+                });
+                if (baseErr) {
+                  setError('فشل تعديل الطلبية الأساسية: ' + baseErr);
+                  setLoading(false);
+                  return;
+                }
+                const { customer_name, order_date, ...detailedFields } = formData;
+                const { error: fullErr } = await updateFullOrder(editingOrder.id, detailedFields);
+                setLoading(false);
+                if (fullErr) {
+                  setError('فشل تعديل تفاصيل الاستمارة: ' + fullErr);
+                } else {
+                  setSuccessMsg('تم تعديل الطلبية بنجاح');
+                  setShowForm(false);
+                  setEditingOrder(null);
+                  fetchAll();
+                }
+              } else {
+                // Create mode
+                const { data: baseData, error: baseErr } = await createOrder(
+                  formData.customer_name || formData.organizer_name || '',
+                  formData.order_date || new Date().toISOString().split('T')[0],
+                  formData.extra_details || '',
+                  'pending',
+                  user?.username || 'مجهول'
+                );
+                if (baseErr) {
+                  setError('فشل إنشاء الطلبية الأساسية: ' + baseErr);
+                  setLoading(false);
+                  return;
+                }
+                const orderId = baseData.id;
+                const { customer_name, order_date, ...detailedFields } = formData;
+                const { data: fullData, error: fullErr } = await createFullOrder(orderId, detailedFields);
+                setLoading(false);
+                if (fullErr) {
+                  setError('فشل حفظ بيانات الاستمارة: ' + fullErr);
+                } else {
+                  setSuccessMsg('تم إنشاء الطلبية بنجاح');
+                  setShowForm(false);
+                  fetchAll();
+                }
+              }
+            }}
+          />
+        )}
 
         {/* Orders List */}
         {loading && orders.length === 0 ? (
