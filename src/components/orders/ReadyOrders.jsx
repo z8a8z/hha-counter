@@ -718,44 +718,51 @@ export default function ReadyOrders({ refreshTrigger }) {
       {/* Select Order Modal Overlay */}
       {showSelectOrderModal && (
         <div className="form-overlay" onClick={() => setShowSelectOrderModal(false)}>
-          <div className="form-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>تجهيز طلبية جديدة</h3>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-              الرجاء اختيار طلبية من إدارة الطلبيات للبدء في تجهيزها:
-            </p>
+          <div className="form-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '550px' }}>
+            <div className="form-modal-header">
+              <h3>تجهيز طلبية جديدة</h3>
+            </div>
             
-            {availableOrders.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '1.5rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '8px', border: '1px dashed rgba(255, 255, 255, 0.1)' }}>
-                <p style={{ color: '#fbbf24', marginBottom: '1rem' }}>⚠️ لا توجد طلبيات قيد الانتظار حالياً</p>
-                <button 
-                  className="btn btn-outline btn-sm" 
-                  onClick={() => setShowSelectOrderModal(false)}
-                >
-                  إغلاق
+            <div className="form-modal-body" style={{ padding: '1.5rem' }}>
+              <p style={{ color: 'var(--txt-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                الرجاء اختيار طلبية من إدارة الطلبيات للبدء في تجهيزها:
+              </p>
+              
+              {availableOrders.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '1.5rem', background: 'var(--bg-hover)', borderRadius: '8px', border: '1px dashed var(--border)' }}>
+                  <p style={{ color: '#fbbf24', marginBottom: '1rem' }}>⚠️ لا توجد طلبيات قيد الانتظار حالياً</p>
+                  <button 
+                    className="btn btn-outline btn-sm" 
+                    onClick={() => setShowSelectOrderModal(false)}
+                  >
+                    إغلاق
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '300px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+                  {availableOrders.map(order => (
+                    <div 
+                      key={order.id} 
+                      className="select-order-item"
+                      onClick={() => handleConfirmPrepareOrder(order)}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', textAlign: 'right' }}>
+                        <span style={{ fontWeight: '600', color: 'var(--txt-primary)' }}>{order.customer_name}</span>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--txt-secondary)' }}>#{order.id} | {new Date(order.order_date).toLocaleDateString('ar-EG')}</span>
+                      </div>
+                      <span style={{ color: 'var(--clr-accent)', fontWeight: 'bold' }}>تجهيز ←</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="form-modal-footer">
+              <div className="modal-actions" style={{ margin: 0 }}>
+                <button type="button" className="btn btn-outline" onClick={() => setShowSelectOrderModal(false)}>
+                  إلغاء
                 </button>
               </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '300px', overflowY: 'auto', paddingRight: '0.25rem' }}>
-                {availableOrders.map(order => (
-                  <div 
-                    key={order.id} 
-                    className="select-order-item"
-                    onClick={() => handleConfirmPrepareOrder(order)}
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', textAlign: 'right' }}>
-                      <span style={{ fontWeight: '600', color: '#fff' }}>{order.customer_name}</span>
-                      <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>#{order.id} | {new Date(order.order_date).toLocaleDateString('ar-EG')}</span>
-                    </div>
-                    <span style={{ color: 'var(--color-primary-hover)', fontWeight: 'bold' }}>تجهيز ←</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            <div className="modal-actions" style={{ marginTop: '0.5rem' }}>
-              <button type="button" className="btn btn-outline" onClick={() => setShowSelectOrderModal(false)}>
-                إلغاء
-              </button>
             </div>
           </div>
         </div>

@@ -7,6 +7,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 :root {
@@ -373,6 +374,20 @@ body {
 
   .app-main {
     width: 100%;
+  }
+
+  .form-overlay {
+    padding: 0.5rem;
+  }
+
+  .form-modal {
+    max-height: 96dvh;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
   }
 }
 
