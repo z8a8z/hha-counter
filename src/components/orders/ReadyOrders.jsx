@@ -166,8 +166,10 @@ export default function ReadyOrders({ refreshTrigger }) {
     }
     
     setOrderName(currentName);
-    setPipeLength(order.pipe_length?.toString() || '');
-    setPipeWeight(order.pipe_weight?.toString() || '');
+    const pLengthVal = order.pipe_length && parseFloat(order.pipe_length) !== 0 ? order.pipe_length.toString() : '';
+    const pWeightVal = order.pipe_weight && parseFloat(order.pipe_weight) !== 0 ? order.pipe_weight.toString() : '';
+    setPipeLength(pLengthVal);
+    setPipeWeight(pWeightVal);
 
     if (order.ready_order_rolls) {
       setRolls(order.ready_order_rolls.map((r, index) => ({
@@ -184,6 +186,23 @@ export default function ReadyOrders({ refreshTrigger }) {
 
   /* ─── Roll Management ────────────────────────────────────── */
   const handleAddRoll = useCallback(() => {
+    // Validate existing rolls
+    for (let i = 0; i < rolls.length; i++) {
+      const wStr = rolls[i].weight.trim();
+      if (wStr === '') {
+        setError('يرجى إدخال وزن الرول الحالي أولاً');
+        setTimeout(() => rollInputRefs.current[rolls[i].id]?.focus(), 50);
+        return;
+      }
+      const wVal = parseFloat(wStr);
+      if (isNaN(wVal) || wVal <= 1000) {
+        setError('يجب أن يكون وزن الرول أكبر من 1000 جرام');
+        setTimeout(() => rollInputRefs.current[rolls[i].id]?.focus(), 50);
+        return;
+      }
+    }
+
+    setError('');
     const newId = `${Date.now()}-${Math.random()}`;
     setRolls(prev => [{ id: newId, weight: '' }, ...prev]);
 
@@ -191,7 +210,7 @@ export default function ReadyOrders({ refreshTrigger }) {
       const el = rollInputRefs.current[newId];
       if (el) el.focus();
     }, 60);
-  }, []);
+  }, [rolls]);
 
   const handleRollWeightChange = (id, newWeight) => {
     const sanitized = newWeight.replace(/[^0-9.]/g, '');
@@ -204,20 +223,46 @@ export default function ReadyOrders({ refreshTrigger }) {
 
   /* ─── Save ───────────────────────────────────────────────── */
   const handleSave = async () => {
+    setError('');
+    setSuccessMsg('');
+
     if (!orderName.trim()) {
       setError('يجب إدخال اسم الطلبية');
       return;
     }
 
-    setError('');
-    setSuccessMsg('');
+    if (!pipeLength || parseFloat(pipeLength) <= 0) {
+      setError('يجب إدخال طول الماسورة (قيمة أكبر من 0)');
+      return;
+    }
+
+    if (!pipeWeight || parseFloat(pipeWeight) <= 0) {
+      setError('يجب إدخال وزن الماسورة (قيمة أكبر من 0)');
+      return;
+    }
+
+    const validRolls = rolls.filter(r => r.weight.trim() !== '');
+
+    if (validRolls.length === 0) {
+      setError('يجب إضافة رول واحد على الأقل ذو وزن صحيح');
+      return;
+    }
+
+    const invalidRoll = validRolls.find(r => parseFloat(r.weight) <= 1000);
+    if (invalidRoll) {
+      setError('يجب أن يكون وزن كل رول أكبر من 1000 جرام');
+      setTimeout(() => rollInputRefs.current[invalidRoll.id]?.focus(), 50);
+      return;
+    }
+
+    setRolls(validRolls);
     setLoading(true);
 
     const { error: saveErr } = await saveReadyOrder(editingOrder.id, {
       name: orderName,
       pipeLength,
       pipeWeight,
-      rolls
+      rolls: validRolls
     });
 
     setLoading(false);
@@ -232,13 +277,58 @@ export default function ReadyOrders({ refreshTrigger }) {
   };
 
   const handleMarkReady = async () => {
+    setError('');
+    setSuccessMsg('');
+
+    if (!orderName.trim()) {
+      setError('يجب إدخال اسم الطلبية');
+      return;
+    }
+
+    if (!pipeLength || parseFloat(pipeLength) <= 0) {
+      setError('يجب إدخال طول الماسورة (قيمة أكبر من 0)');
+      return;
+    }
+
+    if (!pipeWeight || parseFloat(pipeWeight) <= 0) {
+      setError('يجب إدخال وزن الماسورة (قيمة أكبر من 0)');
+      return;
+    }
+
+    const validRolls = rolls.filter(r => r.weight.trim() !== '');
+
+    if (validRolls.length === 0) {
+      setError('يجب إضافة رول واحد على الأقل ذو وزن صحيح');
+      return;
+    }
+
+    const invalidRoll = validRolls.find(r => parseFloat(r.weight) <= 1000);
+    if (invalidRoll) {
+      setError('يجب أن يكون وزن كل رول أكبر من 1000 جرام');
+      setTimeout(() => rollInputRefs.current[invalidRoll.id]?.focus(), 50);
+      return;
+    }
+
     if (!window.confirm('هل أنت متأكد من تعليم الطلبية كـ "جاهز"؟ لن تتمكن من تعديلها بعد ذلك.')) {
       return;
     }
 
-    setError('');
-    setSuccessMsg('');
+    setRolls(validRolls);
     setLoading(true);
+
+    // Save changes first
+    const { error: saveErr } = await saveReadyOrder(editingOrder.id, {
+      name: orderName,
+      pipeLength,
+      pipeWeight,
+      rolls: validRolls
+    });
+
+    if (saveErr) {
+      setError('فشل في حفظ البيانات قبل التجهيز: ' + saveErr);
+      setLoading(false);
+      return;
+    }
 
     const { error: markErr } = await markReadyOrder(editingOrder.id);
 
