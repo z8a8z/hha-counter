@@ -42,6 +42,12 @@ export function AuthProvider({ children }) {
       setLoading(false);
       return;
     }
+    // Scale employee always gets only 'ready' tab
+    if (userData.role === 'scale_employee') {
+      setAllowedTabs(['ready']);
+      setLoading(false);
+      return;
+    }
     // Fetch per-user permissions
     const { data, error } = await getUserPermissions(userData.id);
     if (!error && data) {

@@ -12,8 +12,8 @@ import {
 import { hashPassword } from '../../lib/auth.js';
 import { useAuth } from '../../hooks/useAuth.jsx';
 
-const ROLE_LABELS = { developer: 'مطور', admin: 'مدير', accountant: 'محاسب', user: 'مستخدم' };
-const ROLE_COLORS = { developer: 'purple', admin: 'blue', accountant: 'green', user: 'gray' };
+const ROLE_LABELS = { developer: 'مطور', admin: 'مدير', accountant: 'محاسب', scale_employee: 'موظف ميزان', user: 'مستخدم' };
+const ROLE_COLORS = { developer: 'purple', admin: 'blue', accountant: 'green', scale_employee: 'orange', user: 'gray' };
 
 const ALL_TABS = [
   { key: 'purchases', label: 'مشتريات' },
@@ -40,7 +40,9 @@ function RoleBadge({ role }) {
           ? '#2563eb'
           : role === 'accountant'
             ? '#10b981'
-            : '#6b7280',
+            : role === 'scale_employee'
+              ? '#d97706'
+              : '#6b7280',
   };
   return <span style={badgeStyle}>{ROLE_LABELS[role] || role}</span>;
 }
@@ -291,6 +293,7 @@ export default function UserManagement() {
                       >
                         <option value="user">مستخدم</option>
                         <option value="accountant">محاسب</option>
+                        <option value="scale_employee">موظف ميزان</option>
                         <option value="admin">مدير</option>
                         <option value="developer">مطور</option>
                       </select>
@@ -389,6 +392,7 @@ export default function UserManagement() {
           >
             <option value="user">مستخدم</option>
             <option value="accountant">محاسب</option>
+            <option value="scale_employee">موظف ميزان</option>
             {isDev && <option value="admin">مدير</option>}
             {isDev && <option value="developer">مطور</option>}
           </select>

@@ -17,7 +17,7 @@ function ProtectedRoute({ children }) {
 
 // Main layout with sidebar
 function AppShell() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!user) {
@@ -33,29 +33,56 @@ function AppShell() {
   return (
     <div className="app-shell">
       {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {user.role !== 'scale_employee' && (
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      )}
 
       {/* Mobile overlay */}
-      <div
-        className={`drawer-overlay ${sidebarOpen ? 'open' : ''}`}
-        onClick={() => setSidebarOpen(false)}
-      />
+      {user.role !== 'scale_employee' && (
+        <div
+          className={`drawer-overlay ${sidebarOpen ? 'open' : ''}`}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
       {/* Main area */}
       <div className="app-main">
-        {/* Topbar (mobile only brand + hamburger) */}
+        {/* Topbar */}
         <header className="app-topbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <img src="/images/printingslogo.png" alt="Logo" style={{ maxHeight: '44px', maxWidth: '44px', objectFit: 'contain', borderRadius: '4px', background: '#fff', padding: '1px' }} />
+            {user.role === 'scale_employee' && (
+              <span className="scale-welcome-text" style={{ fontSize: '0.92rem', color: 'var(--txt-secondary)', fontWeight: 500, marginRight: '10px' }}>
+                مرحباً، {user.username} (موظف ميزان)
+              </span>
+            )}
           </div>
           <div className="topbar-actions">
-            <button
-              className="menu-btn"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="فتح القائمة"
-            >
-              ☰
-            </button>
+            {user.role === 'scale_employee' ? (
+              <button
+                className="btn btn-danger btn-small"
+                onClick={logout}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  fontSize: '0.85rem',
+                  cursor: 'pointer'
+                }}
+              >
+                <span>تسجيل الخروج</span>
+                <span style={{ transform: 'scaleX(-1)', display: 'inline-block' }}>↩</span>
+              </button>
+            ) : (
+              <button
+                className="menu-btn"
+                onClick={() => setSidebarOpen(true)}
+                aria-label="فتح القائمة"
+              >
+                ☰
+              </button>
+            )}
           </div>
         </header>
 

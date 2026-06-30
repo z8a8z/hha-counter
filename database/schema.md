@@ -310,3 +310,29 @@
 | `created_by` | `text` |  Nullable |
 | `created_at` | `timestamptz` |  |
 
+## Triggers
+
+### Trigger: `on_auth_user_created`
+Executed automatically `AFTER INSERT ON public.app_users`. It initializes default permissions (allowed tabs) in `user_permissions` based on the user's role.
+
+```sql
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.user_permissions (user_id, allowed_tabs)
+  VALUES (
+    NEW.id,
+    CASE 
+      WHEN NEW.role = 'developer' THEN ARRAY['purchases', 'ready', 'orders', 'withdraw', 'damaged', 'storage', 'report']::text[]
+      WHEN NEW.role = 'admin' THEN ARRAY['purchases', 'ready', 'orders', 'withdraw', 'damaged', 'storage', 'report']::text[]
+      WHEN NEW.role = 'accountant' THEN ARRAY['purchases', 'storage', 'report']::text[]
+      WHEN NEW.role = 'scale_employee' THEN ARRAY['ready']::text[]
+      ELSE ARRAY['ready', 'orders']::text[]
+    END
+  )
+  ON CONFLICT (user_id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+```
+

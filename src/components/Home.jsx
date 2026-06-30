@@ -56,18 +56,20 @@ export default function Home() {
   return (
     <div className="home-container">
       {/* Tab strip */}
-      <div className="home-tabs-header">
-        {filteredTabs.map((tab) => (
-          <button
-            key={tab.id}
-            className={`tab ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => handleTabChange(tab.id)}
-          >
-            <span style={{ marginLeft: '0.3rem', fontSize: '0.9em', opacity: 0.8 }}>{tab.icon}</span>
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {filteredTabs.length > 1 && (
+        <div className="home-tabs-header">
+          {filteredTabs.map((tab) => (
+            <button
+              key={tab.id}
+              className={`tab ${activeTab === tab.id ? 'active' : ''}`}
+              onClick={() => handleTabChange(tab.id)}
+            >
+              <span style={{ marginLeft: '0.3rem', fontSize: '0.9em', opacity: 0.8 }}>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Tab panels (kept mounted after first visit for performance, filtered by role permission) */}
       <div className="tab-content">
