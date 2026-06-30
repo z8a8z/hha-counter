@@ -31,6 +31,7 @@ export default function OrderForm({ onCancel, onSuccess, initialData = null, aut
   const [jobDesc, setJobDesc] = useState(initialData?.functional_desc ?? '');
   const [quantityKg, setQuantityKg] = useState(initialData?.weight_kg ?? '');
   const [fasoon, setFasoon] = useState(initialData?.fasoon ?? false);
+  const [deliveryDate, setDeliveryDate] = useState(initialData?.delivery_date ?? '');
 
   const handleCustomerNameChange = (val) => {
     setCustomerName(val);
@@ -106,6 +107,16 @@ export default function OrderForm({ onCancel, onSuccess, initialData = null, aut
       return;
     }
 
+    if (!deliveryDate) {
+      setErrorMsg('يرجى إدخال تاريخ التسليم');
+      return;
+    }
+    const todayDateStr = new Date().toISOString().split('T')[0];
+    if (deliveryDate < todayDateStr) {
+      setErrorMsg('تاريخ التسليم لا يمكن أن يكون قبل تاريخ اليوم');
+      return;
+    }
+
     const isPrintEnabled = workTypes.includes('طباعة');
     const isLamEnabled = workTypes.includes('لامنيشن');
     const isPackEnabled = workTypes.includes('تغليف');
@@ -156,6 +167,7 @@ export default function OrderForm({ onCancel, onSuccess, initialData = null, aut
       customer_name: customerName,
       order_date: orderDate,
       extra_details: extraDetails,
+      delivery_date: deliveryDate,
       // Detailed order form fields
       customer_phone: customerPhone,
       organizer_name: organizerName,
@@ -217,7 +229,7 @@ export default function OrderForm({ onCancel, onSuccess, initialData = null, aut
           {/* ---------- General ---------- */}
           <section className="form-card-section">
             <h4>عام</h4>
-            <div className="form-grid-4">
+            <div className="form-grid-5">
               <div className="form-group">
                 <label>الفني</label>
                 <input type="text" value={technician} onChange={e => setTechnician(e.target.value)} list="technicians-list" required />
@@ -242,6 +254,16 @@ export default function OrderForm({ onCancel, onSuccess, initialData = null, aut
               <div className="form-group">
                 <label>التاريخ</label>
                 <input type="date" value={orderDate} onChange={e => setOrderDate(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label>تاريخ التسليم *</label>
+                <input
+                  type="date"
+                  value={deliveryDate}
+                  onChange={e => setDeliveryDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  required
+                />
               </div>
             </div>
 

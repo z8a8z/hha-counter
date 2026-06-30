@@ -87,12 +87,10 @@ function PreparedCard({ readyOrder, onDelete, onPrint }) {
           <span className="prepared-stat-label">الوزن الصافي</span>
           <span className="prepared-stat-value">{netWeight.toFixed(2)} kg</span>
         </div>
-        {readyOrder.pipe_length > 0 && (
-          <div className="prepared-stat">
-            <span className="prepared-stat-label">طول الماسورة</span>
-            <span className="prepared-stat-value">{readyOrder.pipe_length} cm</span>
-          </div>
-        )}
+        <div className="prepared-stat">
+          <span className="prepared-stat-label">طول الماسورة</span>
+          <span className="prepared-stat-value">{parseFloat(readyOrder.pipe_length) > 0 ? `${readyOrder.pipe_length} cm` : '—'}</span>
+        </div>
       </div>
       <div className="prepared-card-date">
         📅 {new Date(readyOrder.created_at).toLocaleDateString('ar-EG')}
@@ -141,8 +139,6 @@ export default function Orders({ onStatusChange }) {
     printHtml(html);
   };
 
-  // Dedicated canvas toggle
-  const [showPrepared, setShowPrepared] = useState(false);
   // Track which order row has the canvas expanded
   const [expandedOrderId, setExpandedOrderId] = useState(null);
 
@@ -162,8 +158,14 @@ export default function Orders({ onStatusChange }) {
   const [details, setDetails] = useState('');
   const [status, setStatus] = useState('pending');
 
-  // Filter
+  // Advanced Filters, Search, Sorting, and Pagination
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterDateRange, setFilterDateRange] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchType, setSearchType] = useState('clientname');
+  const [sortBy, setSortBy] = useState('number');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   useEffect(() => {
     fetchAll();
@@ -308,11 +310,68 @@ export default function Orders({ onStatusChange }) {
     setExpandedOrderId(prev => prev === orderId ? null : orderId);
   };
 
-  // Filter orders
-  const filteredOrders = orders.filter(order => {
-    if (filterStatus === 'all') return true;
-    return order.status === filterStatus;
+  // Reset page to 1 when filters, search, or sorting change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterStatus, filterDateRange, searchQuery, searchType, sortBy]);
+
+  const filteredAndSortedOrders = orders.filter(order => {
+    // 1. Status Filter
+    if (filterStatus !== 'all' && order.status !== filterStatus) return false;
+
+    // 2. Date Range Filter
+    if (filterDateRange !== 'all') {
+      const orderDateObj = new Date(order.order_date);
+      const today = new Date();
+      
+      if (filterDateRange === 'today') {
+        const todayStr = today.toISOString().split('T')[0];
+        if (order.order_date !== todayStr) return false;
+      } else if (filterDateRange === 'this_week') {
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+
+        if (orderDateObj < startOfWeek || orderDateObj > endOfWeek) return false;
+      } else if (filterDateRange === 'this_month') {
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+        if (orderDateObj < startOfMonth || orderDateObj > endOfMonth) return false;
+      }
+    }
+
+    // 3. Search Query
+    if (searchQuery.trim() !== '') {
+      const query = searchQuery.trim().toLowerCase();
+      if (searchType === 'number') {
+        if (!order.id.toString().includes(query)) return false;
+      } else {
+        if (!order.customer_name.toLowerCase().includes(query)) return false;
+      }
+    }
+
+    return true;
+  }).sort((a, b) => {
+    // 4. Sorting
+    if (sortBy === 'delivery') {
+      if (!a.delivery_date) return 1;
+      if (!b.delivery_date) return -1;
+      return new Date(a.delivery_date) - new Date(b.delivery_date);
+    } else {
+      // Default: sort by order number descending
+      return b.id - a.id;
+    }
   });
+
+  const totalPages = Math.ceil(filteredAndSortedOrders.length / itemsPerPage);
+  const paginatedOrders = filteredAndSortedOrders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   // Get ready orders linked to a specific order id
   const getLinkedReadyOrders = (orderId) => {
@@ -325,22 +384,6 @@ export default function Orders({ onStatusChange }) {
         <div className="orders-header-bar">
           <h2>إدارة الطلبيات</h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            {/* Show Prepared toggle */}
-            <div className="prepared-toggle-row">
-              <span className="prepared-toggle-label">عرض التجهيزات</span>
-              <label className="toggle-switch">
-                <input
-                  type="checkbox"
-                  checked={showPrepared}
-                  onChange={(e) => {
-                    setShowPrepared(e.target.checked);
-                    if (!e.target.checked) setExpandedOrderId(null);
-                  }}
-                />
-                <span className="toggle-slider" />
-              </label>
-            </div>
-            
             {/* Migrated print button */}
             <button
               className="btn btn-small btn-outline"
@@ -364,32 +407,63 @@ export default function Orders({ onStatusChange }) {
         {error && <div className="error-banner">{error}</div>}
         {successMsg && <div className="success-banner">{successMsg}</div>}
 
-        {/* Filters */}
-        <div className="orders-filters">
-          <button
-            className={`filter-btn ${filterStatus === 'all' ? 'active' : ''}`}
-            onClick={() => setFilterStatus('all')}
-          >
-            الكل
-          </button>
-          <button
-            className={`filter-btn ${filterStatus === 'pending' ? 'active' : ''}`}
-            onClick={() => setFilterStatus('pending')}
-          >
-            قيد الانتظار
-          </button>
-          <button
-            className={`filter-btn ${filterStatus === 'completed' ? 'active' : ''}`}
-            onClick={() => setFilterStatus('completed')}
-          >
-            مكتمل
-          </button>
-          <button
-            className={`filter-btn ${filterStatus === 'cancelled' ? 'active' : ''}`}
-            onClick={() => setFilterStatus('cancelled')}
-          >
-            ملغي
-          </button>
+        {/* Reworked Search, Sort & Filters Panel */}
+        <div className="orders-filter-panel">
+          {/* Row 1: Search & Sorting */}
+          <div className="filter-row">
+            <div className="search-group">
+              <input
+                type="text"
+                placeholder={searchType === 'clientname' ? 'ابحث باسم العميل...' : 'ابحث برقم الطلب...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input"
+              />
+              <select
+                value={searchType}
+                onChange={(e) => setSearchType(e.target.value)}
+                className="search-type-select"
+              >
+                <option value="clientname">باسم العميل</option>
+                <option value="number">بالرقم</option>
+              </select>
+            </div>
+            
+            <div className="sort-group">
+              <label>ترتيب حسب:</label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="sort-select"
+              >
+                <option value="number">رقم الطلب</option>
+                <option value="delivery">تاريخ التسليم</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Row 2: Status & Date range buttons */}
+          <div className="filter-row" style={{ marginTop: '0.75rem', gap: '2rem' }}>
+            <div className="filter-btn-group">
+              <span className="filter-group-label">الحالة:</span>
+              <div className="filter-segment">
+                <button className={`filter-btn ${filterStatus === 'all' ? 'active' : ''}`} onClick={() => setFilterStatus('all')}>الكل</button>
+                <button className={`filter-btn ${filterStatus === 'pending' ? 'active' : ''}`} onClick={() => setFilterStatus('pending')}>قيد الانتظار</button>
+                <button className={`filter-btn ${filterStatus === 'completed' ? 'active' : ''}`} onClick={() => setFilterStatus('completed')}>مكتمل</button>
+                <button className={`filter-btn ${filterStatus === 'cancelled' ? 'active' : ''}`} onClick={() => setFilterStatus('cancelled')}>ملغي</button>
+              </div>
+            </div>
+
+            <div className="filter-btn-group">
+              <span className="filter-group-label">التاريخ:</span>
+              <div className="filter-segment">
+                <button className={`filter-btn ${filterDateRange === 'all' ? 'active' : ''}`} onClick={() => setFilterDateRange('all')}>الكل</button>
+                <button className={`filter-btn ${filterDateRange === 'today' ? 'active' : ''}`} onClick={() => setFilterDateRange('today')}>اليوم</button>
+                <button className={`filter-btn ${filterDateRange === 'this_week' ? 'active' : ''}`} onClick={() => setFilterDateRange('this_week')}>هذا الأسبوع</button>
+                <button className={`filter-btn ${filterDateRange === 'this_month' ? 'active' : ''}`} onClick={() => setFilterDateRange('this_month')}>هذا الشهر</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Modal / Form Overlay */}
@@ -412,14 +486,15 @@ export default function Orders({ onStatusChange }) {
                   customer_name: formData.customer_name || formData.organizer_name || '',
                   order_date: formData.order_date || new Date().toISOString().split('T')[0],
                   details: formData.extra_details || '',
-                  status: editingOrder.status
+                  status: editingOrder.status,
+                  delivery_date: formData.delivery_date || null
                 });
                 if (baseErr) {
                   setError('فشل تعديل الطلبية الأساسية: ' + baseErr);
                   setLoading(false);
                   return;
                 }
-                const { customer_name, order_date, ...detailedFields } = formData;
+                const { customer_name, order_date, delivery_date, ...detailedFields } = formData;
                 const { error: fullErr } = await updateFullOrder(editingOrder.id, detailedFields);
                 setLoading(false);
                 if (fullErr) {
@@ -437,7 +512,8 @@ export default function Orders({ onStatusChange }) {
                   formData.order_date || new Date().toISOString().split('T')[0],
                   formData.extra_details || '',
                   'pending',
-                  user?.username || 'مجهول'
+                  user?.username || 'مجهول',
+                  formData.delivery_date
                 );
                 if (baseErr) {
                   setError('فشل إنشاء الطلبية الأساسية: ' + baseErr);
@@ -445,7 +521,7 @@ export default function Orders({ onStatusChange }) {
                   return;
                 }
                 const orderId = baseData.id;
-                const { customer_name, order_date, ...detailedFields } = formData;
+                const { customer_name, order_date, delivery_date, ...detailedFields } = formData;
                 const { data: fullData, error: fullErr } = await createFullOrder(orderId, detailedFields);
                 setLoading(false);
                 if (fullErr) {
@@ -466,104 +542,110 @@ export default function Orders({ onStatusChange }) {
             <div className="spinner"></div>
             <p>جاري تحميل الطلبيات...</p>
           </div>
-        ) : filteredOrders.length === 0 ? (
+        ) : paginatedOrders.length === 0 ? (
           <div className="empty-state">
             <p>لا توجد طلبيات مطابقة للبحث أو مضافة حالياً.</p>
           </div>
         ) : (
-          <div className="orders-table-wrapper">
-            <table className="orders-table">
-              <thead>
-                <tr>
-                  <th>رقم الطلب</th>
-                  <th>اسم العميل</th>
-                  <th>تاريخ الطلبية</th>
-                  <th>التفاصيل</th>
-                  <th>أنشئ بواسطة</th>
-                  <th>الحالة</th>
-                  <th>الإجراءات</th>
-                  {showPrepared && <th>التجهيزات</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredOrders.map((order) => {
-                  const linked = getLinkedReadyOrders(order.id);
-                  const isExpanded = expandedOrderId === order.id;
+          <>
+            <div className="orders-table-wrapper">
+              <table className="orders-table">
+                <thead>
+                  <tr>
+                    <th>رقم الطلب</th>
+                    <th>اسم العميل</th>
+                    <th>تاريخ الطلبية</th>
+                    <th>تاريخ التسليم</th>
+                    <th>التفاصيل</th>
+                    <th>أنشئ بواسطة</th>
+                    <th>الحالة</th>
+                    <th>الإجراءات</th>
+                    <th>التجهيزات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedOrders.map((order) => {
+                    const linked = getLinkedReadyOrders(order.id);
+                    const isExpanded = expandedOrderId === order.id;
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const isOverdue = order.status !== 'completed' && order.status !== 'cancelled' && order.delivery_date && order.delivery_date < todayStr;
 
-                  return (
-                    <React.Fragment key={order.id}>
-                      <tr 
-                        className={`${isExpanded ? 'order-row-selected' : ''} ${isExpanded && showPrepared ? 'order-row-expanded' : ''}`}
-                        onClick={() => toggleExpandedOrder(order.id)}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <td>#{order.id}</td>
-                        <td className="font-bold">{order.customer_name}</td>
-                        <td>{new Date(order.order_date).toLocaleDateString('ar-EG')}</td>
-                        <td className="details-cell">{order.details || '—'}</td>
-                        <td>
-                          <span className="creator-badge">👤 {order.created_by || 'مجهول'}</span>
-                        </td>
-                        <td>
-                          <select
-                            className={`status-badge ${STATUS_CLASSES[order.status]}`}
-                            value={order.status}
-                            onClick={(e) => e.stopPropagation()}
-                            onChange={async (e) => {
-                              const newStatus = e.target.value;
-                              setLoading(true);
-                              const { error: err } = await updateOrder(order.id, { status: newStatus });
-                              setLoading(false);
-                              if (err) {
-                                setError('فشل تحديث حالة الطلبية: ' + err);
-                              } else {
-                                setSuccessMsg('تم تحديث حالة الطلبية بنجاح');
-                                fetchAll();
-                                if (onStatusChange) onStatusChange();
-                              }
-                            }}
-                            style={{
-                              border: 'none',
-                              outline: 'none',
-                              cursor: 'pointer',
-                              padding: '0.2rem 0.4rem 0.2rem 0.6rem',
-                              fontFamily: 'inherit',
-                              fontSize: '0.72rem',
-                              fontWeight: '600'
-                            }}
-                          >
-                            <option value="pending" style={{ background: '#1e1b4b', color: '#fbbf24' }}>قيد الانتظار</option>
-                            <option value="completed" style={{ background: '#1e1b4b', color: '#34d399' }}>مكتمل</option>
-                            <option value="cancelled" style={{ background: '#1e1b4b', color: '#f87171' }}>ملغي</option>
-                          </select>
-                        </td>
-                        <td>
-                          <div className="table-actions">
-                            <button
-                              className="btn btn-small btn-outline"
-                              onClick={(e) => { e.stopPropagation(); openEditForm(order); }}
-                              title="تعديل"
+                    return (
+                      <React.Fragment key={order.id}>
+                        <tr 
+                          className={`${isExpanded ? 'order-row-selected' : ''} ${isExpanded ? 'order-row-expanded' : ''} ${isOverdue ? 'order-row-overdue' : ''}`}
+                          onClick={() => toggleExpandedOrder(order.id)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <td>#{order.id}</td>
+                          <td className="font-bold">{order.customer_name}</td>
+                          <td>{new Date(order.order_date).toLocaleDateString('ar-EG')}</td>
+                          <td style={{ fontWeight: '600', color: isOverdue ? '#f87171' : 'inherit' }}>
+                            {order.delivery_date ? new Date(order.delivery_date).toLocaleDateString('ar-EG') : '—'}
+                          </td>
+                          <td className="details-cell">{order.details || '—'}</td>
+                          <td>
+                            <span className="creator-badge">👤 {order.created_by || 'مجهول'}</span>
+                          </td>
+                          <td>
+                            <select
+                              className={`status-badge ${STATUS_CLASSES[order.status]}`}
+                              value={order.status}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={async (e) => {
+                                const newStatus = e.target.value;
+                                setLoading(true);
+                                const { error: err } = await updateOrder(order.id, { status: newStatus });
+                                setLoading(false);
+                                if (err) {
+                                  setError('فشل تحديث حالة الطلبية: ' + err);
+                                } else {
+                                  setSuccessMsg('تم تحديث حالة الطلبية بنجاح');
+                                  fetchAll();
+                                  if (onStatusChange) onStatusChange();
+                                }
+                              }}
+                              style={{
+                                border: 'none',
+                                outline: 'none',
+                                cursor: 'pointer',
+                                padding: '0.2rem 0.4rem 0.2rem 0.6rem',
+                                fontFamily: 'inherit',
+                                fontSize: '0.72rem',
+                                fontWeight: '600'
+                              }}
                             >
-                              ✏️ تعديل
-                            </button>
-                            <button
-                              className="btn btn-small btn-delete"
-                              onClick={(e) => { e.stopPropagation(); handleDelete(order.id, order.customer_name); }}
-                              title="حذف"
-                            >
-                              🗑️ حذف
-                            </button>
-                            <button
-                              className="btn btn-small btn-outline"
-                              onClick={(e) => { e.stopPropagation(); handlePrint(order, 'work'); }}
-                              style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}
-                              title="طباعة الورشة"
-                            >
-                              🛠️ ورشة
-                            </button>
-                          </div>
-                        </td>
-                        {showPrepared && (
+                              <option value="pending" style={{ background: '#1e1b4b', color: '#fbbf24' }}>قيد الانتظار</option>
+                              <option value="completed" style={{ background: '#1e1b4b', color: '#34d399' }}>مكتمل</option>
+                              <option value="cancelled" style={{ background: '#1e1b4b', color: '#f87171' }}>ملغي</option>
+                            </select>
+                          </td>
+                          <td>
+                            <div className="table-actions">
+                              <button
+                                className="btn btn-small btn-outline"
+                                onClick={(e) => { e.stopPropagation(); openEditForm(order); }}
+                                title="تعديل"
+                              >
+                                ✏️ تعديل
+                              </button>
+                              <button
+                                className="btn btn-small btn-delete"
+                                onClick={(e) => { e.stopPropagation(); handleDelete(order.id, order.customer_name); }}
+                                title="حذف"
+                              >
+                                🗑️ حذف
+                              </button>
+                              <button
+                                className="btn btn-small btn-outline"
+                                onClick={(e) => { e.stopPropagation(); handlePrint(order, 'work'); }}
+                                style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0' }}
+                                title="طباعة الورشة"
+                              >
+                                🛠️ ورشة
+                              </button>
+                            </div>
+                          </td>
                           <td>
                             {linked.length > 0 ? (
                               <button
@@ -574,43 +656,68 @@ export default function Orders({ onStatusChange }) {
                                 {isExpanded ? '▲ إخفاء' : `▼ عرض (${linked.length})`}
                               </button>
                             ) : (
-                              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>لا يوجد</span>
+                              <span style={{ color: 'var(--txt-muted)', fontSize: '0.85rem' }}>لا يوجد</span>
                             )}
                           </td>
-                        )}
-                      </tr>
-
-                      {/* ── Dedicated Prepared Canvas ── */}
-                      {showPrepared && isExpanded && linked.length > 0 && (
-                        <tr className="prepared-canvas-row">
-                          <td colSpan={8} style={{ padding: 0 }}>
-                            <div className="prepared-canvas">
-                              <div className="prepared-canvas-header">
-                                <span className="prepared-canvas-title">
-                                  🗂️ التجهيزات المرتبطة بـ <strong>{order.customer_name}</strong>
-                                </span>
-                                <span className="prepared-canvas-count">{linked.length} تجهيز</span>
-                              </div>
-                              <div className="prepared-canvas-grid">
-                                {linked.map(ro => (
-                                  <PreparedCard
-                                    key={ro.id}
-                                    readyOrder={ro}
-                                    onDelete={handleDeleteReadyOrder}
-                                    onPrint={handlePrintReadyOrder}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          </td>
                         </tr>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+
+                        {/* ── Dedicated Prepared Canvas ── */}
+                        {isExpanded && linked.length > 0 && (
+                          <tr className="prepared-canvas-row">
+                            <td colSpan={9} style={{ padding: 0 }}>
+                              <div className="prepared-canvas">
+                                <div className="prepared-canvas-header">
+                                  <span className="prepared-canvas-title">
+                                    🗂️ التجهيزات المرتبطة بـ <strong>{order.customer_name}</strong>
+                                  </span>
+                                  <span className="prepared-canvas-count">{linked.length} تجهيز</span>
+                                </div>
+                                <div className="prepared-canvas-grid">
+                                  {linked.map(ro => (
+                                    <PreparedCard
+                                      key={ro.id}
+                                      readyOrder={ro}
+                                      onDelete={handleDeleteReadyOrder}
+                                      onPrint={handlePrintReadyOrder}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.25rem' }}>
+                <button
+                  className="btn btn-outline btn-sm"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  style={{ minWidth: '80px' }}
+                >
+                  السابق
+                </button>
+                <span className="page-info" style={{ fontWeight: '500', color: 'var(--txt-muted)' }}>
+                  صفحة {currentPage} من {totalPages}
+                </span>
+                <button
+                  className="btn btn-outline btn-sm"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  style={{ minWidth: '80px' }}
+                >
+                  التالي
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -618,7 +618,7 @@ export async function getOrders() {
   return { data, error: null };
 }
 
-export async function createOrder(customerName, orderDate, details, status, createdBy) {
+export async function createOrder(customerName, orderDate, details, status, createdBy, deliveryDate) {
   const { valid, missing } = validateEnv();
   if (!valid) return { data: null, error: 'Env not configured' };
   const { data, error } = await supabase
@@ -628,7 +628,8 @@ export async function createOrder(customerName, orderDate, details, status, crea
       order_date: orderDate || new Date().toISOString().split('T')[0],
       details: details || null,
       status: status || 'pending',
-      created_by: createdBy || null
+      created_by: createdBy || null,
+      delivery_date: deliveryDate || null
     })
     .select()
     .single();

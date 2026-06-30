@@ -186,6 +186,11 @@ export default function ReadyOrders({ refreshTrigger }) {
 
   /* ─── Roll Management ────────────────────────────────────── */
   const handleAddRoll = useCallback(() => {
+    if (rolls.length >= 60) {
+      setError('لا يمكن إضافة أكثر من 60 رول');
+      return;
+    }
+
     // Validate existing rolls
     for (let i = 0; i < rolls.length; i++) {
       const wStr = rolls[i].weight.trim();
@@ -346,14 +351,21 @@ export default function ReadyOrders({ refreshTrigger }) {
   };
 
   /* ─── Calculations ───────────────────────────────────────── */
-  const grossWeight = rolls.reduce((sum, r) => sum + (parseFloat(r.weight) || 0), 0);
-  const rollsCount = rolls.length;
+  const validRollsForCalc = rolls.filter(r => {
+    const wVal = parseFloat(r.weight);
+    return !isNaN(wVal) && wVal > 1000;
+  });
+  const grossWeight = validRollsForCalc.reduce((sum, r) => sum + parseFloat(r.weight), 0);
+  const rollsCount = validRollsForCalc.length;
   const pWeight = parseFloat(pipeWeight) || 0;
   const netWeight = grossWeight - (rollsCount * pWeight);
 
   const getOrderStats = (order) => {
-    const listRolls = order.ready_order_rolls || [];
-    const grWeight = listRolls.reduce((sum, r) => sum + (parseFloat(r.weight) || 0), 0);
+    const listRolls = (order.ready_order_rolls || []).filter(r => {
+      const wVal = parseFloat(r.weight);
+      return !isNaN(wVal) && wVal > 1000;
+    });
+    const grWeight = listRolls.reduce((sum, r) => sum + parseFloat(r.weight), 0);
     const count = listRolls.length;
     const piWeight = parseFloat(order.pipe_weight) || 0;
     const ntWeight = grWeight - (count * piWeight);
@@ -370,9 +382,10 @@ export default function ReadyOrders({ refreshTrigger }) {
     const isViewOnly = isReady || parentOrderClosed;
 
     return (
-      <div className="ready-layout">
-        {/* ── Main edit panel ── */}
-        <div className="ready-edit-container">
+      <div className="ready-layout ready-layout-editing">
+        <div className="ready-edit-container ready-edit-container-fullscreen">
+          
+          {/* Header */}
           <div className="edit-header">
             <button className="btn btn-outline" onClick={() => setEditingOrder(null)} disabled={loading}>
               رجوع
@@ -389,47 +402,122 @@ export default function ReadyOrders({ refreshTrigger }) {
           </div>
 
           {parentOrderClosed && (
-            <div className="warning-banner" style={{ margin: '1rem 0', padding: '1rem', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', color: '#f87171', textAlign: 'center', fontWeight: '500' }}>
+            <div className="warning-banner" style={{ margin: '0.5rem 0', padding: '0.75rem', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '8px', color: '#f87171', textAlign: 'center', fontWeight: '500', fontSize: '0.9rem' }}>
               ⚠️ الطلبية المرتبطة بهذا التجهيز تم إغلاقها (مكتملة أو ملغية) ولا يمكن تعديلها.
             </div>
           )}
 
-          {error && <div className="error-banner">{error}</div>}
-          {successMsg && <div className="success-banner">{successMsg}</div>}
+          {error && <div className="error-banner" style={{ margin: '0.5rem 0' }}>{error}</div>}
+          {successMsg && <div className="success-banner" style={{ margin: '0.5rem 0' }}>{successMsg}</div>}
 
-          <div className="settings-card ready-edit-card">
-            <div className="form-group">
-              <label htmlFor="order-name">اسم الطلبية</label>
-              <input
-                id="order-name"
-                ref={orderNameRef}
-                type="text"
-                className="order-name-input"
-                value={orderName}
-                onChange={(e) => setOrderName(e.target.value)}
-                placeholder="مثال: طلبية شهر يونيو"
-                disabled={loading || isViewOnly}
-              />
+          <div className="ready-edit-grid">
+            
+            {/* RIGHT COLUMN: General Details & Stats & Actions */}
+            <div className="ready-details-col">
+              
+              {/* Card 1: Order Name & Pipe specs */}
+              <div className="settings-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div className="form-group">
+                  <label htmlFor="order-name" style={{ fontSize: '0.95rem', fontWeight: '600' }}>اسم الطلبية</label>
+                  <input
+                    id="order-name"
+                    ref={orderNameRef}
+                    type="text"
+                    className="order-name-input"
+                    value={orderName}
+                    onChange={(e) => setOrderName(e.target.value)}
+                    placeholder="مثال: طلبية شهر يونيو"
+                    disabled={loading || isViewOnly}
+                    style={{ fontSize: '1.05rem', padding: '0.6rem 0.8rem' }}
+                  />
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className="form-group">
+                    <label htmlFor="pipe-length" style={{ fontSize: '0.9rem', fontWeight: '600' }}>طول الماسورة (cm)</label>
+                    <input
+                      id="pipe-length"
+                      ref={pipeLengthRef}
+                      type="text"
+                      inputMode="decimal"
+                      value={pipeLength}
+                      onChange={(e) => setPipeLength(e.target.value.replace(/[^0-9.]/g, ''))}
+                      disabled={loading || isViewOnly}
+                      style={{ fontSize: '1.05rem', padding: '0.6rem 0.8rem' }}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="pipe-weight" style={{ fontSize: '0.9rem', fontWeight: '600' }}>وزن الماسورة (g)</label>
+                    <input
+                      id="pipe-weight"
+                      ref={pipeWeightRef}
+                      type="text"
+                      inputMode="decimal"
+                      value={pipeWeight}
+                      onChange={(e) => setPipeWeight(e.target.value.replace(/[^0-9.]/g, ''))}
+                      disabled={loading || isViewOnly}
+                      style={{ fontSize: '1.05rem', padding: '0.6rem 0.8rem' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: Stats & Action Buttons */}
+              <div className="order-info-tab" style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 0 }}>
+                <div>
+                  <h4 style={{ fontSize: '1rem', color: 'var(--clr-accent-light)', marginBottom: '0.75rem', fontWeight: 'bold' }}>تفاصيل التجهيز الحالية</h4>
+                  
+                  <div className="info-grid" style={{ gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div className="info-stat" style={{ padding: '0.75rem 0.95rem' }}>
+                      <span className="stat-label" style={{ fontSize: '0.82rem' }}>إجمالي الوزن (القائم)</span>
+                      <span className="stat-value" style={{ fontSize: '1.35rem' }}>{(grossWeight / 1000).toFixed(2)} kg</span>
+                    </div>
+                    <div className="info-stat" style={{ padding: '0.75rem 0.95rem' }}>
+                      <span className="stat-label" style={{ fontSize: '0.82rem' }}>عدد الرولات</span>
+                      <span className="stat-value" style={{ fontSize: '1.35rem' }}>{rollsCount}</span>
+                    </div>
+                    <div className="info-stat net-weight-stat" style={{ gridColumn: 'span 2', padding: '0.9rem 1.1rem' }}>
+                      <span className="stat-label" style={{ fontSize: '0.85rem' }}>الوزن الصافي</span>
+                      <span className="stat-value" style={{ fontSize: '1.75rem', color: 'var(--clr-green)' }}>{(netWeight / 1000).toFixed(2)} kg</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="info-actions" style={{ marginTop: '1.25rem', gap: '0.85rem' }}>
+                  {!isViewOnly && (
+                    <button className="btn btn-primary" onClick={handleSave} disabled={loading} style={{ fontSize: '1.05rem', padding: '0.75rem 1rem' }}>
+                      {loading ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+                    </button>
+                  )}
+                  {!isViewOnly && (
+                    <button className="btn btn-ready" onClick={handleMarkReady} disabled={loading} style={{ fontSize: '1.05rem', padding: '0.75rem 1rem' }}>
+                      {loading ? 'جاري...' : 'جاهز ✓'}
+                    </button>
+                  )}
+                </div>
+              </div>
+
             </div>
 
-            <div className="rolls-section">
-              <div className="rolls-header">
-                <h3>الرولات ({rolls.length})</h3>
+            {/* LEFT COLUMN: Rolls list */}
+            <div className="ready-rolls-col">
+              <div className="rolls-header" style={{ marginBottom: '0.5rem' }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>رولات التجهيز ({rolls.length})</h3>
                 {!isViewOnly && (
-                  <button className="btn btn-primary btn-sm" onClick={handleAddRoll} disabled={loading}>
+                  <button className="btn btn-primary btn-sm" onClick={handleAddRoll} disabled={loading} style={{ fontSize: '0.95rem', padding: '0.45rem 0.9rem' }}>
                     إضافة رول +
                   </button>
                 )}
               </div>
 
-              <div className="rolls-list">
+              <div className="ready-rolls-scrollable">
                 {rolls.length === 0 ? (
-                  <div className="no-rolls-msg">لا يوجد رولات مضافة بعد. اضغط على "إضافة رول" للبدء.</div>
+                  <div className="no-rolls-msg" style={{ fontSize: '0.95rem', padding: '2rem 1rem' }}>لا يوجد رولات مضافة بعد. اضغط على "إضافة رول" للبدء.</div>
                 ) : (
                   rolls.map((roll, index) => (
-                    <div key={roll.id} className="roll-row">
-                      <span className="roll-index">رول {rollNumber(index)}</span>
-                      <div className="roll-input-container">
+                    <div key={roll.id} className="roll-row" style={{ padding: '0.55rem 0.85rem' }}>
+                      <span className="roll-index" style={{ fontSize: '0.95rem', fontWeight: '600' }}>رول {rollNumber(index)}</span>
+                      <div className="roll-input-container" style={{ maxWidth: '220px' }}>
                         <input
                           ref={(el) => {
                             if (el) rollInputRefs.current[roll.id] = el;
@@ -447,8 +535,9 @@ export default function ReadyOrders({ refreshTrigger }) {
                           }}
                           placeholder="الوزن (g)"
                           disabled={loading || isViewOnly}
+                          style={{ fontSize: '1.05rem', padding: '0.45rem 0.75rem' }}
                         />
-                        <span className="unit">g</span>
+                        <span className="unit" style={{ fontSize: '0.95rem' }}>g</span>
                       </div>
                       {!isViewOnly && (
                         <button
@@ -456,6 +545,7 @@ export default function ReadyOrders({ refreshTrigger }) {
                           onClick={() => handleDeleteRoll(roll.id)}
                           title="حذف الرول"
                           disabled={loading}
+                          style={{ fontSize: '1.1rem', padding: '4px 8px' }}
                         >
                           ✕
                         </button>
@@ -466,66 +556,8 @@ export default function ReadyOrders({ refreshTrigger }) {
               </div>
             </div>
 
-            {/* Bottom Info Tab */}
-            <div className="order-info-tab">
-              <h4>تفاصيل الطلبية العامة</h4>
-              <div className="info-grid">
-                <div className="info-stat">
-                  <span className="stat-label">إجمالي الوزن (القائم)</span>
-                  <span className="stat-value">{(grossWeight / 1000).toFixed(2)} kg</span>
-                </div>
-                <div className="info-stat">
-                  <span className="stat-label">عدد الرولات</span>
-                  <span className="stat-value">{rollsCount}</span>
-                </div>
-
-                <div className="info-input-group">
-                  <div className="form-group">
-                    <label htmlFor="pipe-length">طول الماسورة (cm)</label>
-                    <input
-                      id="pipe-length"
-                      ref={pipeLengthRef}
-                      type="text"
-                      inputMode="decimal"
-                      value={pipeLength}
-                      onChange={(e) => setPipeLength(e.target.value.replace(/[^0-9.]/g, ''))}
-                      disabled={loading || isViewOnly}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="pipe-weight">وزن الماسورة (g)</label>
-                    <input
-                      id="pipe-weight"
-                      ref={pipeWeightRef}
-                      type="text"
-                      inputMode="decimal"
-                      value={pipeWeight}
-                      onChange={(e) => setPipeWeight(e.target.value.replace(/[^0-9.]/g, ''))}
-                      disabled={loading || isViewOnly}
-                    />
-                  </div>
-                </div>
-
-                <div className="info-stat net-weight-stat">
-                  <span className="stat-label">الوزن الصافي</span>
-                  <span className="stat-value">{(netWeight / 1000).toFixed(2)} kg</span>
-                </div>
-              </div>
-
-              <div className="info-actions">
-                {!isViewOnly && (
-                  <button className="btn btn-primary" onClick={handleSave} disabled={loading}>
-                    {loading ? 'جاري الحفظ...' : 'حفظ التغييرات'}
-                  </button>
-                )}
-                {!isViewOnly && (
-                  <button className="btn btn-ready" onClick={handleMarkReady} disabled={loading}>
-                    {loading ? 'جاري...' : 'جاهز ✓'}
-                  </button>
-                )}
-              </div>
-            </div>
           </div>
+
         </div>
       </div>
     );
