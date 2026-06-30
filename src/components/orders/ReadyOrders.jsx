@@ -496,6 +496,12 @@ export default function ReadyOrders({ refreshTrigger }) {
                           value={roll.weight}
                           onChange={(e) => handleRollWeightChange(roll.id, e.target.value)}
                           onFocus={makeRollFocusHandler(roll, index)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddRoll();
+                            }
+                          }}
                           placeholder="الوزن (g)"
                           disabled={loading || isViewOnly}
                         />

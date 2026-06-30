@@ -91,18 +91,7 @@ export default function OrderForm({ onCancel, onSuccess, initialData = null, aut
     );
   };
 
-  const isWidthDeviating = (val) => {
-    if (!prodWidth || !val) return false;
-    return parseFloat(val) !== parseFloat(prodWidth);
-  };
 
-  const handleProdWidthChange = (val) => {
-    setProdWidth(val);
-    setMaterialMeasure(val);
-    setLamMeas1(val);
-    setLamMeas2(val);
-    setLamMeas3(val);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -324,7 +313,7 @@ export default function OrderForm({ onCancel, onSuccess, initialData = null, aut
               </div>
               <div className="form-group">
                 <label>قياس الانتاج (عرض mm)</label>
-                <input type="number" min="0" value={prodWidth} onChange={e => handleProdWidthChange(e.target.value)} required />
+                <input type="number" min="0" value={prodWidth} onChange={e => setProdWidth(e.target.value)} required />
               </div>
               <div className="form-group">
                 <label>تصميم</label>
@@ -397,7 +386,6 @@ export default function OrderForm({ onCancel, onSuccess, initialData = null, aut
                     min="0"
                     value={materialMeasure}
                     onChange={e => setMaterialMeasure(e.target.value)}
-                    className={isWidthDeviating(materialMeasure) ? 'input-highlight-red' : ''}
                     required
                   />
                 </div>
@@ -432,14 +420,13 @@ export default function OrderForm({ onCancel, onSuccess, initialData = null, aut
                   </div>
                   <div className="form-group">
                     <label>قياس 1 (mm)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={lamMeas1}
-                      onChange={e => setLamMeas1(e.target.value)}
-                      className={isWidthDeviating(lamMeas1) ? 'input-highlight-red' : ''}
-                      disabled={!lamMat1}
-                    />
+                     <input
+                       type="number"
+                       min="0"
+                       value={lamMeas1}
+                       onChange={e => setLamMeas1(e.target.value)}
+                       disabled={!lamMat1}
+                     />
                   </div>
                   <div className="form-group">
                     <label>MIC 1 (micron)</label>
@@ -466,14 +453,13 @@ export default function OrderForm({ onCancel, onSuccess, initialData = null, aut
                   </div>
                   <div className="form-group">
                     <label>قياس 2 (mm)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={lamMeas2}
-                      onChange={e => setLamMeas2(e.target.value)}
-                      className={isWidthDeviating(lamMeas2) ? 'input-highlight-red' : ''}
-                      disabled={!lamMat2}
-                    />
+                     <input
+                       type="number"
+                       min="0"
+                       value={lamMeas2}
+                       onChange={e => setLamMeas2(e.target.value)}
+                       disabled={!lamMat2}
+                     />
                   </div>
                   <div className="form-group">
                     <label>MIC 2 (micron)</label>
@@ -500,14 +486,13 @@ export default function OrderForm({ onCancel, onSuccess, initialData = null, aut
                   </div>
                   <div className="form-group">
                     <label>قياس 3 (mm)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={lamMeas3}
-                      onChange={e => setLamMeas3(e.target.value)}
-                      className={isWidthDeviating(lamMeas3) ? 'input-highlight-red' : ''}
-                      disabled={!lamMat3}
-                    />
+                     <input
+                       type="number"
+                       min="0"
+                       value={lamMeas3}
+                       onChange={e => setLamMeas3(e.target.value)}
+                       disabled={!lamMat3}
+                     />
                   </div>
                   <div className="form-group">
                     <label>MIC 3 (micron)</label>
