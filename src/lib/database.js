@@ -127,7 +127,7 @@ export async function getReadyOrders() {
     .from('ready_orders')
     .select(`
       id, name, pipe_length, pipe_weight, status, created_at, order_id,
-      orders (customer_name, status),
+      orders (customer_name, status, order_forms (functional_desc)),
       ready_order_rolls (id, weight)
     `)
     .order('created_at', { ascending: false });
@@ -612,7 +612,7 @@ export async function getOrders() {
   if (!valid) return { data: null, error: 'Env not configured' };
   const { data, error } = await supabase
     .from('orders')
-    .select('*')
+    .select('*, order_forms (functional_desc)')
     .order('created_at', { ascending: false });
   if (error) { debug.error(MODULE, 'getOrders error', error); return { data: null, error: error.message }; }
   return { data, error: null };

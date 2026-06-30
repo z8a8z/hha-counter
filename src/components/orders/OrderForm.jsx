@@ -285,7 +285,7 @@ export default function OrderForm({ onCancel, onSuccess, initialData = null, aut
 
             <div className="form-group span-full">
               <label>وصف وظيفي</label>
-              <textarea value={jobDesc} onChange={e => setJobDesc(e.target.value)} rows={2} required />
+              <input type="text" value={jobDesc} onChange={e => setJobDesc(e.target.value)} required />
             </div>
 
             <div className="form-group span-full">

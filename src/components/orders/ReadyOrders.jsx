@@ -3,6 +3,7 @@ import { getReadyOrders, createReadyOrder, saveReadyOrder, deleteReadyOrder, mar
 import { debug } from '../../lib/debug.js';
 import { usePrint } from '../../hooks/usePrint.js';
 import { PrintTemplates } from '../common/PrintTemplates.js';
+import { useAuth } from '../../hooks/useAuth.jsx';
 
 const MODULE = 'ReadyOrders';
 
@@ -11,101 +12,11 @@ const STATUS_LABELS = {
   ready: 'تجهيز مكتمل'
 };
 
-/* ─── Numeric Keypad layout ──────────────────────────────── */
-const KEYPAD_ROWS = [
-  ['7', '8', '9'],
-  ['4', '5', '6'],
-  ['1', '2', '3'],
-  ['.', '0', '⌫'],
-];
-
-/* ─── NumericKeyboard component ──────────────────────────── */
-function NumericKeyboard({ onKey }) {
-  return (
-    <div className="numeric-keyboard">
-      {KEYPAD_ROWS.map((row, rIdx) => (
-        <div key={rIdx} className="keyboard-row">
-          {row.map((key) => {
-            let extraClass = '';
-            if (key === '⌫') extraClass = 'key-backspace';
-            return (
-              <button
-                key={key}
-                className={`keyboard-key ${extraClass}`}
-                onMouseDown={(e) => {
-                  // prevent blur on the active input
-                  e.preventDefault();
-                  onKey(key);
-                }}
-              >
-                {key}
-              </button>
-            );
-          })}
-        </div>
-      ))}
-      {/* Clear row */}
-      <div className="keyboard-row">
-        <button
-          className="keyboard-key key-clear"
-          onMouseDown={(e) => { e.preventDefault(); onKey('CLEAR'); }}
-        >
-          مسح
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/* ─── KeyboardSidebar component ──────────────────────────── */
-function KeyboardSidebar({ activeField, onKey, onSave, saveDisabled }) {
-  const [keyboardOn, setKeyboardOn] = useState(true);
-
-  return (
-    <aside className="keyboard-sidebar">
-      <div className="numeric-keyboard-wrapper">
-        {/* Toggle row */}
-        <div className="keyboard-toggle-row">
-          <span className="keyboard-toggle-label">لوحة الأرقام</span>
-          <label className="toggle-switch">
-            <input
-              type="checkbox"
-              checked={keyboardOn}
-              onChange={(e) => setKeyboardOn(e.target.checked)}
-            />
-            <span className="toggle-slider" />
-          </label>
-        </div>
-
-        {/* Active-field indicator */}
-        <div className="keyboard-active-indicator">
-          {keyboardOn
-            ? (activeField ? `◉ ${activeField.label}` : 'انقر على حقل لتفعيله')
-            : null}
-        </div>
-
-        {/* Keyboard grid */}
-        {keyboardOn && <NumericKeyboard onKey={onKey} />}
-
-        {/* Save shortcut */}
-        {keyboardOn && (
-          <div className="keyboard-row" style={{ marginTop: '0.5rem' }}>
-            <button
-              className="keyboard-key key-save"
-              onMouseDown={(e) => { e.preventDefault(); onSave(); }}
-              disabled={saveDisabled}
-            >
-              تأكيد + رول جديد
-            </button>
-          </div>
-        )}
-      </div>
-    </aside>
-  );
-}
+// Keyboard components purged
 
 /* ─── Main Component ─────────────────────────────────────── */
 export default function ReadyOrders({ refreshTrigger }) {
+  const { user } = useAuth();
   const [orders, setOrders] = useState([]);
   const { printHtml } = usePrint();
   const [loading, setLoading] = useState(true);
@@ -153,10 +64,6 @@ export default function ReadyOrders({ refreshTrigger }) {
   const [pipeWeight, setPipeWeight] = useState('');
   const [rolls, setRolls] = useState([]);    // Array of { id, weight }
 
-  // Keyboard / focus state
-  // activeField: { type: 'roll'|'pipe-length'|'pipe-weight'|'order-name', id?: string, label: string }
-  const [activeField, setActiveField] = useState(null);
-
   // Ready order link state
   const [availableOrders, setAvailableOrders] = useState([]);
   const [showSelectOrderModal, setShowSelectOrderModal] = useState(false);
@@ -201,7 +108,12 @@ export default function ReadyOrders({ refreshTrigger }) {
     setShowSelectOrderModal(false);
     setError('');
     setLoading(true);
-    const name = `تجهيز طلبية: ${selectedOrder.customer_name}`;
+
+    const existingCount = orders.filter(o => o.order_id === selectedOrder.id).length;
+    const autoNum = existingCount + 1;
+    const functionalDesc = selectedOrder.order_forms?.[0]?.functional_desc || '';
+    const name = `${selectedOrder.customer_name} | ${functionalDesc} | ${autoNum}`;
+
     const { data, error: createErr } = await createReadyOrder(name, selectedOrder.id);
     setLoading(false);
 
@@ -243,8 +155,17 @@ export default function ReadyOrders({ refreshTrigger }) {
 
   const startEditing = (order) => {
     setEditingOrder(order);
-    setOrderName(order.name);
-    // Clean state: default to empty string, not '0'
+    
+    let currentName = order.name;
+    const parentOrder = order.orders;
+    if (parentOrder && (!currentName || currentName.startsWith('تجهيز طلبية:'))) {
+      const existingCount = orders.filter(o => o.order_id === order.order_id && new Date(o.created_at) < new Date(order.created_at)).length;
+      const autoNum = existingCount + 1;
+      const functionalDesc = parentOrder.order_forms?.[0]?.functional_desc || parentOrder.order_forms?.functional_desc || '';
+      currentName = `${parentOrder.customer_name} | ${functionalDesc} | ${autoNum}`;
+    }
+    
+    setOrderName(currentName);
     setPipeLength(order.pipe_length?.toString() || '');
     setPipeWeight(order.pipe_weight?.toString() || '');
 
@@ -258,24 +179,14 @@ export default function ReadyOrders({ refreshTrigger }) {
     }
     setError('');
     setSuccessMsg('');
-    // Auto-focus the order name field when entering edit mode
-    setActiveField({ type: 'order-name', label: 'اسم الطلبية' });
     setTimeout(() => orderNameRef.current?.focus(), 80);
   };
 
   /* ─── Roll Management ────────────────────────────────────── */
   const handleAddRoll = useCallback(() => {
     const newId = `${Date.now()}-${Math.random()}`;
-    // Prepend: insert at top of list
-    setRolls(prev => {
-      const newRolls = [{ id: newId, weight: '' }, ...prev];
-      // New roll is at index 0, its number = newRolls.length
-      const newNumber = newRolls.length;
-      setActiveField({ type: 'roll', id: newId, label: `رول ${newNumber}` });
-      return newRolls;
-    });
+    setRolls(prev => [{ id: newId, weight: '' }, ...prev]);
 
-    // Wait one tick for the DOM to mount the new input then focus it
     setTimeout(() => {
       const el = rollInputRefs.current[newId];
       if (el) el.focus();
@@ -289,7 +200,6 @@ export default function ReadyOrders({ refreshTrigger }) {
 
   const handleDeleteRoll = (id) => {
     setRolls(prev => prev.filter(r => r.id !== id));
-    if (activeField?.id === id) setActiveField(null);
   };
 
   /* ─── Save ───────────────────────────────────────────────── */
@@ -316,21 +226,7 @@ export default function ReadyOrders({ refreshTrigger }) {
       setError('فشل في حفظ البيانات: ' + saveErr);
     } else {
       setSuccessMsg('تم حفظ الطلبية بنجاح!');
-      // Refresh the orders list dynamically
       fetchOrders();
-      // Keep focus on the active field after save – re-focus it
-      setTimeout(() => {
-        if (activeField?.type === 'roll' && activeField.id) {
-          rollInputRefs.current[activeField.id]?.focus();
-        } else if (activeField?.type === 'pipe-length') {
-          pipeLengthRef.current?.focus();
-        } else if (activeField?.type === 'pipe-weight') {
-          pipeWeightRef.current?.focus();
-        } else {
-          orderNameRef.current?.focus();
-        }
-      }, 100);
-      // Clear success message after a moment but stay on this page
       setTimeout(() => setSuccessMsg(''), 2000);
     }
   };
@@ -359,41 +255,6 @@ export default function ReadyOrders({ refreshTrigger }) {
     }
   };
 
-
-  /* ─── Keyboard injection ─────────────────────────────────── */
-  const handleKeypadKey = useCallback((key) => {
-    if (!activeField) return;
-
-    const applyToValue = (current) => {
-      if (key === 'CLEAR') return '';
-      if (key === '⌫') return current.slice(0, -1);
-      // Prevent double dots
-      if (key === '.' && current.includes('.')) return current;
-      return current + key;
-    };
-
-    if (activeField.type === 'roll') {
-      const { id } = activeField;
-      setRolls(prev => prev.map(r =>
-        r.id === id ? { ...r, weight: applyToValue(r.weight) } : r
-      ));
-      // Keep focus on that roll input
-      setTimeout(() => rollInputRefs.current[id]?.focus(), 0);
-    } else if (activeField.type === 'pipe-length') {
-      setPipeLength(prev => applyToValue(prev));
-      setTimeout(() => pipeLengthRef.current?.focus(), 0);
-    } else if (activeField.type === 'pipe-weight') {
-      setPipeWeight(prev => applyToValue(prev));
-      setTimeout(() => pipeWeightRef.current?.focus(), 0);
-    } else if (activeField.type === 'order-name') {
-      // Order name is text – only inject for backspace/clear
-      if (key === 'CLEAR') setOrderName('');
-      else if (key === '⌫') setOrderName(prev => prev.slice(0, -1));
-      else setOrderName(prev => prev + key);
-      setTimeout(() => orderNameRef.current?.focus(), 0);
-    }
-  }, [activeField]);
-
   /* ─── Calculations ───────────────────────────────────────── */
   const grossWeight = rolls.reduce((sum, r) => sum + (parseFloat(r.weight) || 0), 0);
   const rollsCount = rolls.length;
@@ -410,13 +271,7 @@ export default function ReadyOrders({ refreshTrigger }) {
   };
 
   /* ─── Helpers ────────────────────────────────────────────── */
-  // Rolls are stored newest-first (prepended), so the oldest roll (bottom) = #1,
-  // newest roll (top) = #N. Label uses: rolls.length - index.
   const rollNumber = (index) => rolls.length - index;
-
-  const makeRollFocusHandler = (roll, index) => () => {
-    setActiveField({ type: 'roll', id: roll.id, label: `رول ${rollNumber(index)}` });
-  };
 
   /* ─── Edit / View Mode ───────────────────────────────────── */
   if (editingOrder) {
@@ -432,7 +287,7 @@ export default function ReadyOrders({ refreshTrigger }) {
             <button className="btn btn-outline" onClick={() => setEditingOrder(null)} disabled={loading}>
               رجوع
             </button>
-            <h2>{isViewOnly ? 'عرض طلبية' : 'تعديل طلبية'}</h2>
+            <h2>{isViewOnly ? 'عرض طلبية' : 'تجهيز طلبية'}</h2>
             {editingOrder.orders && (
               <span className="creator-badge" style={{ marginRight: '1rem' }}>
                 👤 العميل: {editingOrder.orders.customer_name}
@@ -462,7 +317,6 @@ export default function ReadyOrders({ refreshTrigger }) {
                 className="order-name-input"
                 value={orderName}
                 onChange={(e) => setOrderName(e.target.value)}
-                onFocus={() => setActiveField({ type: 'order-name', label: 'اسم الطلبية' })}
                 placeholder="مثال: طلبية شهر يونيو"
                 disabled={loading || isViewOnly}
               />
@@ -495,7 +349,6 @@ export default function ReadyOrders({ refreshTrigger }) {
                           inputMode="decimal"
                           value={roll.weight}
                           onChange={(e) => handleRollWeightChange(roll.id, e.target.value)}
-                          onFocus={makeRollFocusHandler(roll, index)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
                               e.preventDefault();
@@ -546,7 +399,6 @@ export default function ReadyOrders({ refreshTrigger }) {
                       inputMode="decimal"
                       value={pipeLength}
                       onChange={(e) => setPipeLength(e.target.value.replace(/[^0-9.]/g, ''))}
-                      onFocus={() => setActiveField({ type: 'pipe-length', label: 'طول الماسورة' })}
                       disabled={loading || isViewOnly}
                     />
                   </div>
@@ -559,7 +411,6 @@ export default function ReadyOrders({ refreshTrigger }) {
                       inputMode="decimal"
                       value={pipeWeight}
                       onChange={(e) => setPipeWeight(e.target.value.replace(/[^0-9.]/g, ''))}
-                      onFocus={() => setActiveField({ type: 'pipe-weight', label: 'وزن الماسورة' })}
                       disabled={loading || isViewOnly}
                     />
                   </div>
@@ -586,16 +437,6 @@ export default function ReadyOrders({ refreshTrigger }) {
             </div>
           </div>
         </div>
-
-        {/* ── Keyboard sidebar ── */}
-        {!isViewOnly && (
-          <KeyboardSidebar
-            activeField={activeField}
-            onKey={handleKeypadKey}
-            onSave={handleAddRoll}
-            saveDisabled={loading}
-          />
-        )}
       </div>
     );
   }
@@ -646,15 +487,17 @@ export default function ReadyOrders({ refreshTrigger }) {
                   <div className="order-card-header">
                     <h3>{order.name}</h3>
                     <div style={{ display: 'flex', gap: '0.35rem' }}>
-                      <button
-                        type="button"
-                        className="ready-card-action-btn"
-                        onClick={(e) => handlePrint(order, e)}
-                        title="طباعة بطاقة التجهيز"
-                        disabled={loading}
-                      >
-                        🖨️
-                      </button>
+                      {user?.role !== 'scale_employee' && (
+                        <button
+                          type="button"
+                          className="ready-card-action-btn"
+                          onClick={(e) => handlePrint(order, e)}
+                          title="طباعة بطاقة التجهيز"
+                          disabled={loading}
+                        >
+                          🖨️
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="ready-card-action-btn"

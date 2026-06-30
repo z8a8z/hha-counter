@@ -24,6 +24,7 @@ const READY_STATUS_LABELS = {
 
 /* ─── Prepared Card (read-only) ─────────────────────────────── */
 function PreparedCard({ readyOrder, onDelete, onPrint }) {
+  const { user } = useAuth();
   const rolls = readyOrder.ready_order_rolls || [];
   const grossWeight = rolls.reduce((sum, r) => sum + (parseFloat(r.weight) || 0), 0);
   const pipeWeight = parseFloat(readyOrder.pipe_weight) || 0;
@@ -38,7 +39,7 @@ function PreparedCard({ readyOrder, onDelete, onPrint }) {
           <span className={`status-badge ${isReady ? 'status-badge-ready' : 'status-badge-preparing'}`}>
             {READY_STATUS_LABELS[readyOrder.status] || READY_STATUS_LABELS.preparing}
           </span>
-          {onPrint && (
+          {onPrint && user?.role !== 'scale_employee' && (
             <button
               type="button"
               className="card-print-btn"
