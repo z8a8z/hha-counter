@@ -5,6 +5,7 @@ import ReadyOrders from './orders/ReadyOrders.jsx';
 import Orders from './orders/Orders.jsx';
 import StorageDashboard from './storage/StorageDashboard.jsx';
 import Damaged from './storage/Damaged.jsx';
+import Withdraw from './storage/Withdraw.jsx';
 
 const TABS = [
   { id: 'purchases', label: 'مشتريات',    icon: '🛒' },
@@ -89,8 +90,8 @@ export default function Home() {
           </div>
         )}
         {allowedTabs.includes('withdraw') && visitedTabs.has('withdraw') && (
-          <div style={{ display: activeTab === 'withdraw' ? 'block' : 'none' }} className="empty-tab">
-            قسم السحب قيد التطوير 🔧
+          <div style={{ display: activeTab === 'withdraw' ? 'block' : 'none' }}>
+            <Withdraw />
           </div>
         )}
         {allowedTabs.includes('damaged') && visitedTabs.has('damaged') && (

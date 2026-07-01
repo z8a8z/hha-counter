@@ -5,18 +5,23 @@ import {
   getPurchaseOffices,
   getPurchaseListItems, addPurchaseListItem,
   updatePurchaseListItem, deletePurchaseListItem,
-  getRollWidths, getRollTypes,
-  getPipeLengths,
-  getLiquidTypes,
-  getInkCompanies, getInkColors, getInkWeights
+  getRollWidths, getRollTypes, getRollThicknesses,
+  addRollWidth, addRollType, addRollThickness,
+  getPipeLengths, addPipeLength,
+  getLiquidTypes, addLiquidType, getLiquidVolumes, addLiquidVolume,
+  getInkCompanies, getInkColors, getInkWeights,
+  addInkCompany, addInkColor, addInkWeight,
+  getGlueTypes, addGlueType, getGlueWeights, addGlueWeight
 } from '../../lib/database.js';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import QuickAddSelector from '../common/QuickAddSelector.jsx';
 
 const ITEM_TYPES = [
   { id: 'roll', label: 'رول' },
   { id: 'pipe', label: 'ماسورة' },
   { id: 'liquid', label: 'سائل' },
-  { id: 'ink', label: 'حبر' }
+  { id: 'ink', label: 'حبر' },
+  { id: 'glue', label: 'صمغ' }
 ];
 
 const STATUS_LABELS = {
@@ -164,7 +169,19 @@ export default function Purchases() {
       {successMsg && <div className="success-banner">{successMsg}</div>}
 
       <div className="purchases-header">
-        <h3>قوائم المشتريات ({lists.length})</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <h3>قوائم المشتريات ({lists.length})</h3>
+          <button 
+            type="button" 
+            className="btn btn-outline" 
+            onClick={fetchAll} 
+            disabled={loading} 
+            style={{ padding: '0 0.5rem', minWidth: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}
+            title="تحديث البيانات"
+          >
+            🔄
+          </button>
+        </div>
         <button className="btn btn-primary" onClick={() => setShowNewForm(!showNewForm)}>
           {showNewForm ? 'إلغاء' : '+ قائمة جديدة'}
         </button>
@@ -296,8 +313,12 @@ function PurchaseListDetail({ listId, lists, offices, onBack, onConfirm }) {
   // Lookup data for item forms
   const [widths, setWidths] = useState([]);
   const [types, setTypes] = useState([]);
+  const [thicknesses, setThicknesses] = useState([]);
   const [pipeLengths, setPipeLengths] = useState([]);
   const [liquidTypes, setLiquidTypes] = useState([]);
+  const [liquidVolumes, setLiquidVolumes] = useState([]);
+  const [glueTypes, setGlueTypes] = useState([]);
+  const [glueWeights, setGlueWeights] = useState([]);
   const [inkCompanies, setInkCompanies] = useState([]);
   const [inkColors, setInkColors] = useState([]);
   const [inkWeights, setInkWeights] = useState([]);
@@ -310,6 +331,7 @@ function PurchaseListDetail({ listId, lists, offices, onBack, onConfirm }) {
   const [qty, setQty] = useState('1');
   const [unit, setUnit] = useState('roll');
   const [weightId, setWeightId] = useState('');
+  const [volumeId, setVolumeId] = useState('');
   const [itemNotes, setItemNotes] = useState('');
 
   const hasFetched = useRef(false);
@@ -318,11 +340,15 @@ function PurchaseListDetail({ listId, lists, offices, onBack, onConfirm }) {
   const isDraft = list.status === 'draft';
 
   const fetchLookups = async () => {
-    const [wRes, tRes, plRes, ltRes, icRes, icoRes, iwRes] = await Promise.all([
+    const [wRes, tRes, plRes, ltRes, icRes, icoRes, iwRes, thRes, lvRes, gtRes, gwRes] = await Promise.all([
       getRollWidths(), getRollTypes(),
       getPipeLengths(), getLiquidTypes(),
       getInkCompanies(), getInkColors(),
-      getInkWeights()
+      getInkWeights(),
+      getRollThicknesses(),
+      getLiquidVolumes(),
+      getGlueTypes(),
+      getGlueWeights()
     ]);
     if (wRes.data) setWidths(wRes.data);
     if (tRes.data) setTypes(tRes.data);
@@ -331,6 +357,10 @@ function PurchaseListDetail({ listId, lists, offices, onBack, onConfirm }) {
     if (icRes.data) setInkCompanies(icRes.data);
     if (icoRes.data) setInkColors(icoRes.data);
     if (iwRes.data) setInkWeights(iwRes.data);
+    if (thRes.data) setThicknesses(thRes.data);
+    if (lvRes.data) setLiquidVolumes(lvRes.data);
+    if (gtRes.data) setGlueTypes(gtRes.data);
+    if (gwRes.data) setGlueWeights(gwRes.data);
   };
 
   const fetchItems = async () => {
@@ -356,16 +386,49 @@ function PurchaseListDetail({ listId, lists, offices, onBack, onConfirm }) {
       setError(itemType === 'roll' ? 'الرجاء اختيار النوع' : 'الرجاء اختيار اللون');
       return;
     }
+    if (itemType === 'roll' && !weightId) { setError('الرجاء اختيار الميكرون (السماكة)'); return; }
     if (itemType === 'ink' && !weightId) { setError('الرجاء اختيار وزن البرميل'); return; }
+    if (itemType === 'liquid' && !volumeId) { setError('الرجاء اختيار حجم البرميل'); return; }
+    if (itemType === 'glue' && !weightId) { setError('الرجاء اختيار وزن البرميل'); return; }
+    
     setError('');
     setSuccessMsg('');
 
-    const finalUnit = itemType === 'roll' ? 'roll' : itemType === 'pipe' ? 'قطعة' : itemType === 'liquid' ? 'لتر' : 'برميل';
+    let finalQty = parseFloat(qty) || 0;
+    let finalUnit = '';
+
+    if (itemType === 'roll') {
+      finalUnit = 'kg';
+    } else if (itemType === 'pipe') {
+      finalUnit = 'قطعة';
+    } else if (itemType === 'liquid') {
+      finalUnit = 'لتر';
+      const volObj = liquidVolumes.find(lv => lv.id === parseInt(volumeId));
+      if (volObj) {
+        finalQty = finalQty * parseFloat(volObj.volume);
+      }
+    } else if (itemType === 'ink') {
+      finalUnit = 'kg';
+      const wtObj = inkWeights.find(iw => iw.id === parseInt(weightId));
+      if (wtObj) {
+        finalQty = finalQty * parseFloat(wtObj.weight);
+      }
+    } else if (itemType === 'glue') {
+      finalUnit = 'kg';
+      const wtObj = glueWeights.find(gw => gw.id === parseInt(weightId));
+      if (wtObj) {
+        finalQty = finalQty * parseFloat(wtObj.weight);
+      }
+    }
 
     const { error: err } = await addPurchaseListItem(
       listId, itemType,
-      parseInt(variant1), variant2 ? parseInt(variant2) : null,
-      qty, finalUnit, weightId ? parseInt(weightId) : null, itemNotes || null
+      parseInt(variant1),
+      variant2 ? parseInt(variant2) : null,
+      finalQty,
+      finalUnit,
+      itemType === 'liquid' ? parseInt(volumeId) : (weightId ? parseInt(weightId) : null),
+      itemNotes || null
     );
     if (err) { setError(err); return; }
     setSuccessMsg('تمت إضافة العنصر!');
@@ -375,6 +438,7 @@ function PurchaseListDetail({ listId, lists, offices, onBack, onConfirm }) {
     setQty('1');
     setUnit('roll');
     setWeightId('');
+    setVolumeId('');
     setItemNotes('');
     fetchItems();
   };
@@ -400,17 +464,18 @@ function PurchaseListDetail({ listId, lists, offices, onBack, onConfirm }) {
   // Get variant labels based on item type
   const getVariant1Label = () => {
     switch (itemType) {
-      case 'roll': return 'العرض';
-      case 'pipe': return 'الطول';
-      case 'liquid': return 'النوع';
-      case 'ink': return 'الشركة';
+      case 'roll': return 'العرض (سم)';
+      case 'pipe': return 'الطول (سم)';
+      case 'liquid': return 'نوع السائل';
+      case 'ink': return 'الشركة المصنعة';
+      case 'glue': return 'نوع الصمغ';
       default: return 'المتغير الأول';
     }
   };
 
   const getVariant2Label = () => {
     switch (itemType) {
-      case 'roll': return 'النوع';
+      case 'roll': return 'نوع الرول';
       case 'ink': return 'اللون';
       default: return 'المتغير الثاني';
     }
@@ -420,8 +485,9 @@ function PurchaseListDetail({ listId, lists, offices, onBack, onConfirm }) {
     switch (itemType) {
       case 'roll': return 'الوزن (kg)';
       case 'ink': return 'عدد البراميل';
-      case 'liquid': return 'الكمية (L)';
-      case 'pipe': return 'الكمية';
+      case 'liquid': return 'عدد البراميل';
+      case 'glue': return 'عدد البراميل';
+      case 'pipe': return 'العدد (قطعة)';
       default: return 'الكمية';
     }
   };
@@ -434,7 +500,19 @@ function PurchaseListDetail({ listId, lists, offices, onBack, onConfirm }) {
           &larr; العودة للقوائم
         </button>
         <div className="detail-info">
-          <h3>قائمة #{listId} – {list.office_name}</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h3>قائمة #{listId} – {list.office_name}</h3>
+            <button 
+              type="button" 
+              className="btn btn-outline" 
+              onClick={() => Promise.all([fetchItems(), fetchLookups()])} 
+              disabled={loading} 
+              style={{ padding: '0 0.5rem', minWidth: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}
+              title="تحديث البيانات"
+            >
+              🔄
+            </button>
+          </div>
           <span className="detail-date mono">
             {new Date(list.purchase_date).toLocaleDateString('en-US')}
           </span>
@@ -508,36 +586,166 @@ function PurchaseListDetail({ listId, lists, offices, onBack, onConfirm }) {
               {/* Variant 1 */}
               <div className="form-group">
                 <label>{getVariant1Label()}</label>
-                <select value={variant1} onChange={(e) => setVariant1(e.target.value)} required>
-                  <option value="">-- اختر --</option>
-                  {itemType === 'roll' && widths.map((w) => (
-                    <option key={w.id} value={w.id}>{w.width} cm</option>
-                  ))}
-                  {itemType === 'pipe' && pipeLengths.map((pl) => (
-                    <option key={pl.id} value={pl.id}>{pl.length} cm</option>
-                  ))}
-                  {itemType === 'liquid' && liquidTypes.map((lt) => (
-                    <option key={lt.id} value={lt.id}>{lt.name}</option>
-                  ))}
-                  {itemType === 'ink' && inkCompanies.map((ic) => (
-                    <option key={ic.id} value={ic.id}>{ic.name}</option>
-                  ))}
-                </select>
+                {itemType === 'roll' && (
+                  <QuickAddSelector
+                    value={variant1}
+                    onChange={setVariant1}
+                    options={widths.map(w => ({ id: w.id, label: `${w.width} cm` }))}
+                    placeholder="-- اختر العرض --"
+                    label="عرض رول (cm)"
+                    isNumeric={true}
+                    required={true}
+                    onAdd={async (val) => {
+                      const { error } = await addRollWidth(val);
+                      if (error) throw new Error(error);
+                      const list = await getRollWidths();
+                      if (list.data) setWidths(list.data);
+                      const item = (list.data || []).find(w => parseFloat(w.width) === parseFloat(val));
+                      return item ? item.id : null;
+                    }}
+                  />
+                )}
+                {itemType === 'pipe' && (
+                  <QuickAddSelector
+                    value={variant1}
+                    onChange={setVariant1}
+                    options={pipeLengths.map(pl => ({ id: pl.id, label: `${pl.length} cm` }))}
+                    placeholder="-- اختر الطول --"
+                    label="طول ماسورة (cm)"
+                    isNumeric={true}
+                    required={true}
+                    onAdd={async (val) => {
+                      const { error } = await addPipeLength(val);
+                      if (error) throw new Error(error);
+                      const list = await getPipeLengths();
+                      if (list.data) setPipeLengths(list.data);
+                      const item = (list.data || []).find(pl => parseFloat(pl.length) === parseFloat(val));
+                      return item ? item.id : null;
+                    }}
+                  />
+                )}
+                {itemType === 'liquid' && (
+                  <QuickAddSelector
+                    value={variant1}
+                    onChange={setVariant1}
+                    options={liquidTypes.map(lt => ({ id: lt.id, label: lt.name }))}
+                    placeholder="-- اختر نوع السائل --"
+                    label="نوع سائل"
+                    required={true}
+                    onAdd={async (val) => {
+                      const { error } = await addLiquidType(val);
+                      if (error) throw new Error(error);
+                      const list = await getLiquidTypes();
+                      if (list.data) setLiquidTypes(list.data);
+                      const item = (list.data || []).find(lt => lt.name.trim() === val.trim());
+                      return item ? item.id : null;
+                    }}
+                  />
+                )}
+                {itemType === 'ink' && (
+                  <QuickAddSelector
+                    value={variant1}
+                    onChange={setVariant1}
+                    options={inkCompanies.map(ic => ({ id: ic.id, label: ic.name }))}
+                    placeholder="-- اختر الشركة --"
+                    label="شركة حبر"
+                    required={true}
+                    onAdd={async (val) => {
+                      const { error } = await addInkCompany(val);
+                      if (error) throw new Error(error);
+                      const list = await getInkCompanies();
+                      if (list.data) setInkCompanies(list.data);
+                      const item = (list.data || []).find(ic => ic.name.trim() === val.trim());
+                      return item ? item.id : null;
+                    }}
+                  />
+                )}
+                {itemType === 'glue' && (
+                  <QuickAddSelector
+                    value={variant1}
+                    onChange={setVariant1}
+                    options={glueTypes.map(gt => ({ id: gt.id, label: gt.name }))}
+                    placeholder="-- اختر نوع الصمغ --"
+                    label="نوع الصمغ"
+                    required={true}
+                    onAdd={async (val) => {
+                      const { error } = await addGlueType(val);
+                      if (error) throw new Error(error);
+                      const list = await getGlueTypes();
+                      if (list.data) setGlueTypes(list.data);
+                      const item = (list.data || []).find(gt => gt.name.trim() === val.trim());
+                      return item ? item.id : null;
+                    }}
+                  />
+                )}
               </div>
 
               {/* Variant 2 (roll type or ink color) */}
-              {(itemType === 'roll' || itemType === 'ink') && (
+              {itemType === 'roll' && (
                 <div className="form-group">
                   <label>{getVariant2Label()}</label>
-                  <select value={variant2} onChange={(e) => setVariant2(e.target.value)} required>
-                    <option value="">-- اختر --</option>
-                    {itemType === 'roll' && types.map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                    {itemType === 'ink' && inkColors.map((ico) => (
-                      <option key={ico.id} value={ico.id}>{ico.name}</option>
-                    ))}
-                  </select>
+                  <QuickAddSelector
+                    value={variant2}
+                    onChange={setVariant2}
+                    options={types.map(t => ({ id: t.id, label: t.name }))}
+                    placeholder="-- اختر نوع الرول --"
+                    label="نوع رول"
+                    required={true}
+                    onAdd={async (val) => {
+                      const { error } = await addRollType(val);
+                      if (error) throw new Error(error);
+                      const list = await getRollTypes();
+                      if (list.data) setTypes(list.data);
+                      const item = (list.data || []).find(t => t.name.trim() === val.trim());
+                      return item ? item.id : null;
+                    }}
+                  />
+                </div>
+              )}
+
+              {itemType === 'ink' && (
+                <div className="form-group">
+                  <label>{getVariant2Label()}</label>
+                  <QuickAddSelector
+                    value={variant2}
+                    onChange={setVariant2}
+                    options={inkColors.map(ico => ({ id: ico.id, label: ico.name }))}
+                    placeholder="-- اختر اللون --"
+                    label="لون حبر"
+                    required={true}
+                    onAdd={async (val) => {
+                      const { error } = await addInkColor(val);
+                      if (error) throw new Error(error);
+                      const list = await getInkColors();
+                      if (list.data) setInkColors(list.data);
+                      const item = (list.data || []).find(ico => ico.name.trim() === val.trim());
+                      return item ? item.id : null;
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Roll Thickness Selector */}
+              {itemType === 'roll' && (
+                <div className="form-group">
+                  <label>الميكرون (السماكة)</label>
+                  <QuickAddSelector
+                    value={weightId}
+                    onChange={setWeightId}
+                    options={thicknesses.map(t => ({ id: t.id, label: `${t.thickness}` }))}
+                    placeholder="-- اختر السمك --"
+                    label="سماكة رول"
+                    isNumeric={true}
+                    required={true}
+                    onAdd={async (val) => {
+                      const { error } = await addRollThickness(val);
+                      if (error) throw new Error(error);
+                      const list = await getRollThicknesses();
+                      if (list.data) setThicknesses(list.data);
+                      const item = (list.data || []).find(t => parseFloat(t.thickness) === parseFloat(val));
+                      return item ? item.id : null;
+                    }}
+                  />
                 </div>
               )}
 
@@ -549,6 +757,7 @@ function PurchaseListDetail({ listId, lists, offices, onBack, onConfirm }) {
                   inputMode="decimal"
                   value={qty}
                   onChange={(e) => setQty(e.target.value.replace(/[^0-9.]/g, ''))}
+                  required
                 />
               </div>
 
@@ -556,12 +765,71 @@ function PurchaseListDetail({ listId, lists, offices, onBack, onConfirm }) {
               {itemType === 'ink' && (
                 <div className="form-group">
                   <label>وزن البرميل (kg)</label>
-                  <select value={weightId} onChange={(e) => setWeightId(e.target.value)} required>
-                    <option value="">-- اختر --</option>
-                    {inkWeights.map((iw) => (
-                      <option key={iw.id} value={iw.id}>{iw.weight} kg</option>
-                    ))}
-                  </select>
+                  <QuickAddSelector
+                    value={weightId}
+                    onChange={setWeightId}
+                    options={inkWeights.map(iw => ({ id: iw.id, label: `${iw.weight} kg` }))}
+                    placeholder="-- اختر وزن البرميل --"
+                    label="وزن برميل حبر (kg)"
+                    isNumeric={true}
+                    required={true}
+                    onAdd={async (val) => {
+                      const { error } = await addInkWeight(val);
+                      if (error) throw new Error(error);
+                      const list = await getInkWeights();
+                      if (list.data) setInkWeights(list.data);
+                      const item = (list.data || []).find(iw => parseFloat(iw.weight) === parseFloat(val));
+                      return item ? item.id : null;
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Liquid barrel volume selector */}
+              {itemType === 'liquid' && (
+                <div className="form-group">
+                  <label>حجم البرميل (L)</label>
+                  <QuickAddSelector
+                    value={volumeId}
+                    onChange={setVolumeId}
+                    options={liquidVolumes.map(lv => ({ id: lv.id, label: `${lv.volume} L` }))}
+                    placeholder="-- اختر الحجم --"
+                    label="حجم برميل سائل (L)"
+                    isNumeric={true}
+                    required={true}
+                    onAdd={async (val) => {
+                      const { error } = await addLiquidVolume(val);
+                      if (error) throw new Error(error);
+                      const list = await getLiquidVolumes();
+                      if (list.data) setLiquidVolumes(list.data);
+                      const item = (list.data || []).find(lv => parseFloat(lv.volume) === parseFloat(val));
+                      return item ? item.id : null;
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Glue barrel weight selector */}
+              {itemType === 'glue' && (
+                <div className="form-group">
+                  <label>وزن البرميل (kg)</label>
+                  <QuickAddSelector
+                    value={weightId}
+                    onChange={setWeightId}
+                    options={glueWeights.map(gw => ({ id: gw.id, label: `${gw.weight} kg` }))}
+                    placeholder="-- اختر وزن البرميل --"
+                    label="وزن برميل صمغ (kg)"
+                    isNumeric={true}
+                    required={true}
+                    onAdd={async (val) => {
+                      const { error } = await addGlueWeight(val);
+                      if (error) throw new Error(error);
+                      const list = await getGlueWeights();
+                      if (list.data) setGlueWeights(list.data);
+                      const item = (list.data || []).find(gw => parseFloat(gw.weight) === parseFloat(val));
+                      return item ? item.id : null;
+                    }}
+                  />
                 </div>
               )}
             </div>

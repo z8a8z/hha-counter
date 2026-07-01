@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import {
-  getDamagedRecords, addDamagedRecord,
-  getRolls, getRollWidths, getRollTypes,
-  getPipes, getPipeLengths,
-  getLiquids, getLiquidTypes,
-  getInks, getInkCompanies, getInkColors
+  getDamagedRecords, addDamagedRecord, deleteDamagedRecord,
+  getRolls, getRollWidths, getRollTypes, deleteRoll, updateRoll, insertRoll,
+  getPipes, getPipeLengths, upsertPipe,
+  getLiquids, getLiquidTypes, upsertLiquid,
+  getInks, getInkCompanies, getInkColors, upsertInk
 } from '../../lib/database.js';
 
 export default function Damaged() {
@@ -135,31 +135,34 @@ export default function Damaged() {
       return;
     }
 
+    let selectedRoll = null;
+    let currentStock = 0;
+
     // Validation against active stock
     if (itemType === 'roll') {
       if (!rollId) { setError('الرجاء اختيار الرول التالف'); return; }
-      const selected = lookups.rolls.find(r => r.id === parseInt(rollId));
-      if (!selected) { setError('الرول المختار غير موجود في المخزن'); return; }
-      if (qtyVal > selected.weight) {
-        setError(`الكمية التالفة (${qtyVal} kg) لا يمكن أن تتجاوز وزن الرول الحالي (${selected.weight} kg)`);
+      selectedRoll = lookups.rolls.find(r => r.id === parseInt(rollId));
+      if (!selectedRoll) { setError('الرول المختار غير موجود في المخزن'); return; }
+      if (qtyVal > selectedRoll.weight) {
+        setError(`الكمية التالفة (${qtyVal} kg) لا يمكن أن تتجاوز وزن الرول الحالي (${selectedRoll.weight} kg)`);
         return;
       }
     } else if (itemType === 'pipe') {
       if (!variant1) { setError('الرجاء اختيار طول الماسورة'); return; }
       const lengthObj = lookups.lengths.find(l => l.id === parseInt(variant1));
       const selected = lengthObj ? lookups.pipes.find(p => p.length === lengthObj.length) : null;
-      const stock = selected ? selected.quantity : 0;
-      if (qtyVal > stock) {
-        setError(`الكمية التالفة (${qtyVal} pcs) تتجاوز الرصيد المتوفر في المخزن (${stock} pcs)`);
+      currentStock = selected ? parseInt(selected.quantity) : 0;
+      if (qtyVal > currentStock) {
+        setError(`الكمية التالفة (${qtyVal} pcs) تتجاوز الرصيد المتوفر في المخزن (${currentStock} pcs)`);
         return;
       }
     } else if (itemType === 'liquid') {
       if (!variant1) { setError('الرجاء اختيار نوع السائل'); return; }
       const typeObj = lookups.liquidTypes.find(lt => lt.id === parseInt(variant1));
       const selected = typeObj ? lookups.liquids.find(l => l.type_name === typeObj.name) : null;
-      const stock = selected ? selected.quantity : 0;
-      if (qtyVal > stock) {
-        setError(`الكمية التالفة (${qtyVal} L) تتجاوز الرصيد المتوفر في المخزن (${stock} L)`);
+      currentStock = selected ? parseFloat(selected.quantity) : 0;
+      if (qtyVal > currentStock) {
+        setError(`الكمية التالفة (${qtyVal} L) تتجاوز الرصيد المتوفر في المخزن (${currentStock} L)`);
         return;
       }
     } else if (itemType === 'ink') {
@@ -168,31 +171,60 @@ export default function Damaged() {
       const compObj = lookups.companies.find(c => c.id === parseInt(variant1));
       const colObj = lookups.colors.find(c => c.id === parseInt(variant2));
       const selected = compObj && colObj ? lookups.inks.find(i => i.company_name === compObj.name && i.color_name === colObj.name) : null;
-      const stock = selected ? selected.quantity : 0;
-      if (qtyVal > stock) {
-        setError(`الكمية التالفة (${qtyVal} kg) تتجاوز الرصيد المتوفر في المخزن (${stock} kg)`);
+      currentStock = selected ? parseFloat(selected.quantity) : 0;
+      if (qtyVal > currentStock) {
+        setError(`الكمية التالفة (${qtyVal} kg) تتجاوز الرصيد المتوفر في المخزن (${currentStock} kg)`);
         return;
       }
     }
 
     setSubmitting(true);
 
+    // DEDUCT STOCK FIRST
+    if (itemType === 'roll') {
+      if (Math.abs(qtyVal - selectedRoll.weight) < 0.01) {
+        // Fully damaged, delete the roll
+        const { error: delErr } = await deleteRoll(selectedRoll.id);
+        if (delErr) { setError(`فشل تعديل المخزن: ${delErr}`); setSubmitting(false); return; }
+      } else {
+        // Partially damaged, update weight
+        const { error: updErr } = await updateRoll(selectedRoll.id, { weight: selectedRoll.weight - qtyVal });
+        if (updErr) { setError(`فشل تعديل المخزن: ${updErr}`); setSubmitting(false); return; }
+      }
+    } else if (itemType === 'pipe') {
+      const { error: upsertErr } = await upsertPipe(parseInt(variant1), currentStock - parseInt(qtyVal), null);
+      if (upsertErr) { setError(`فشل تعديل المخزن: ${upsertErr}`); setSubmitting(false); return; }
+    } else if (itemType === 'liquid') {
+      const { error: upsertErr } = await upsertLiquid(parseInt(variant1), currentStock - qtyVal, null);
+      if (upsertErr) { setError(`فشل تعديل المخزن: ${upsertErr}`); setSubmitting(false); return; }
+    } else if (itemType === 'ink') {
+      const { error: upsertErr } = await upsertInk(parseInt(variant1), parseInt(variant2), currentStock - qtyVal, null);
+      if (upsertErr) { setError(`فشل تعديل المخزن: ${upsertErr}`); setSubmitting(false); return; }
+    }
+
+    // Build notes with serialized thickness metadata for roll if applicable
+    let finalNotes = notes || null;
+    if (itemType === 'roll') {
+      finalNotes = JSON.stringify({
+        thicknessId: selectedRoll.thickness_id,
+        originalNotes: notes || ''
+      });
+    }
+
     // Build payload
     const payload = {
       item_type: itemType,
       quantity: qtyVal,
-      notes: notes || null,
-      created_by: user?.username || 'مجهول'
+      notes: finalNotes,
+      created_by: user?.email || 'موظف المخزن'
     };
 
     if (itemType === 'roll') {
-      const selected = lookups.rolls.find(r => r.id === parseInt(rollId));
-      if (!selected) { setError('الرول المختار غير موجود في المخزن'); setSubmitting(false); return; }
-      const widthObj = lookups.widths.find(w => w.width === selected.width);
-      const typeObj = lookups.types.find(t => t.name === selected.type_name);
+      const widthObj = lookups.widths.find(w => w.width === selectedRoll.width);
+      const typeObj = lookups.types.find(t => t.name === selectedRoll.type_name);
       if (!widthObj) { setError('فشل العثور على معرّف عرض الرول في المخزن'); setSubmitting(false); return; }
 
-      payload.roll_id = parseInt(rollId);
+      payload.roll_id = selectedRoll.id;
       payload.variant_id_1 = widthObj.id;
       payload.variant_id_2 = typeObj ? typeObj.id : null;
     } else {
@@ -209,6 +241,79 @@ export default function Damaged() {
       setSuccess('تم تسجيل التالف وتحديث المخزن بنجاح!');
       setShowModal(false);
       fetchAll();
+    }
+  };
+
+  const handleDeleteRecord = async (rec) => {
+    if (!window.confirm(`هل أنت متأكد من التراجع وحذف هذا التالف؟ سيتم إعادة الكمية (${rec.quantity}) إلى المخزن.`)) return;
+    
+    setLoading(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      // 1. REFUND STOCK
+      if (rec.item_type === 'roll') {
+        const rollExists = lookups.rolls.find(r => r.id === rec.roll_id);
+        if (rollExists) {
+          const { error: updErr } = await updateRoll(rec.roll_id, { weight: rollExists.weight + parseFloat(rec.quantity) });
+          if (updErr) throw new Error(updErr);
+        } else {
+          let thicknessId = null;
+          try {
+            const obj = JSON.parse(rec.notes);
+            thicknessId = obj.thicknessId;
+          } catch (e) {}
+
+          const { error: insErr } = await insertRoll(
+            rec.variant_id_1,
+            rec.variant_id_2,
+            parseFloat(rec.quantity),
+            'مسترجع من التالف',
+            thicknessId
+          );
+          if (insErr) throw new Error(insErr);
+        }
+      } else if (rec.item_type === 'pipe') {
+        const lengthObj = lookups.lengths.find(l => l.id === rec.variant_id_1);
+        const selected = lengthObj ? lookups.pipes.find(p => p.length === lengthObj.length) : null;
+        const currentQty = selected ? parseInt(selected.quantity) : 0;
+        const { error: upsertErr } = await upsertPipe(rec.variant_id_1, currentQty + parseInt(rec.quantity), null);
+        if (upsertErr) throw new Error(upsertErr);
+      } else if (rec.item_type === 'liquid') {
+        const typeObj = lookups.liquidTypes.find(lt => lt.id === rec.variant_id_1);
+        const selected = typeObj ? lookups.liquids.find(l => l.type_name === typeObj.name) : null;
+        const currentQty = selected ? parseFloat(selected.quantity) : 0;
+        const { error: upsertErr } = await upsertLiquid(rec.variant_id_1, currentQty + parseFloat(rec.quantity), null);
+        if (upsertErr) throw new Error(upsertErr);
+      } else if (rec.item_type === 'ink') {
+        const compObj = lookups.companies.find(c => c.id === rec.variant_id_1);
+        const colObj = lookups.colors.find(c => c.id === rec.variant_id_2);
+        const selected = compObj && colObj ? lookups.inks.find(i => i.company_name === compObj.name && i.color_name === colObj.name) : null;
+        const currentQty = selected ? parseFloat(selected.quantity) : 0;
+        const { error: upsertErr } = await upsertInk(rec.variant_id_1, rec.variant_id_2, currentQty + parseFloat(rec.quantity), null);
+        if (upsertErr) throw new Error(upsertErr);
+      }
+
+      // 2. DELETE RECORD
+      const { error: delErr } = await deleteDamagedRecord(rec.id);
+      if (delErr) throw new Error(delErr);
+
+      setSuccess('تم التراجع وحذف سجل التالف وإرجاع المخزون بنجاح!');
+      fetchAll();
+    } catch (err) {
+      setError(`فشل في التراجع عن التالف: ${err.message}`);
+      setLoading(false);
+    }
+  };
+
+  const renderRecordNotes = (noteStr) => {
+    if (!noteStr) return '—';
+    try {
+      const parsed = JSON.parse(noteStr);
+      return parsed.originalNotes || '—';
+    } catch {
+      return noteStr;
     }
   };
 
@@ -263,7 +368,19 @@ export default function Damaged() {
     <div className="ready-layout">
       <div className="ready-container">
         <div className="ready-header-bar">
-          <h2>قسم التالف والفاقد</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h2>قسم التالف والفاقد</h2>
+            <button 
+              type="button" 
+              className="btn btn-outline" 
+              onClick={fetchAll} 
+              disabled={loading} 
+              style={{ padding: '0 0.5rem', minWidth: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}
+              title="تحديث البيانات"
+            >
+              🔄
+            </button>
+          </div>
           <button className="btn btn-primary" onClick={handleOpenModal} disabled={loading && records.length === 0}>
             تسجيل تالف +
           </button>
@@ -312,6 +429,7 @@ export default function Damaged() {
                     <th>الكمية التالفة</th>
                     <th>بواسطة</th>
                     <th>ملاحظات</th>
+                    <th>الإجراء</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -321,8 +439,23 @@ export default function Damaged() {
                       <td><span className="status-badge" style={{ backgroundColor: 'rgba(239, 68, 68, 0.12)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.2)' }}>{getCategoryLabel(rec.item_type)}</span></td>
                       <td><strong>{getRecordDetails(rec)}</strong></td>
                       <td><strong className="mono">{rec.quantity} {getRecordUnit(rec.item_type)}</strong></td>
-                      <td><span className="creator-badge">👤 {rec.created_by}</span></td>
-                      <td className="notes-cell">{rec.notes || '—'}</td>
+                      <td><span className="creator-badge">👤 {rec.created_by?.split('@')[0]}</span></td>
+                      <td className="notes-cell">{renderRecordNotes(rec.notes)}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="btn btn-small btn-outline"
+                          onClick={() => handleDeleteRecord(rec)}
+                          style={{
+                            color: '#ef4444',
+                            borderColor: 'rgba(239, 68, 68, 0.3)',
+                            padding: '2px 8px',
+                            fontSize: '0.8rem'
+                          }}
+                        >
+                          حذف وتراجع
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

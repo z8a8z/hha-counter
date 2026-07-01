@@ -166,6 +166,15 @@ export async function saveReadyOrder(orderId, { name, pipeLength, pipeWeight, ro
 export async function deleteReadyOrder(orderId) {
   const { valid, missing } = validateEnv();
   if (!valid) return { error: 'Env not configured' };
+  
+  // 1. Delete rolls first
+  const { error: rollsErr } = await supabase
+    .from('ready_order_rolls')
+    .delete()
+    .eq('order_id', orderId);
+  if (rollsErr) { debug.error(MODULE, 'deleteReadyOrder - rolls error', rollsErr); return { error: rollsErr.message }; }
+
+  // 2. Delete ready_order
   const { error } = await supabase
     .from('ready_orders')
     .delete()
@@ -190,11 +199,32 @@ export async function markReadyOrder(orderId) {
 
 export async function getRolls() {
   const { data, error } = await supabase
-    .from('v_rolls')
-    .select('*')
-    .order('width', { ascending: true });
+    .from('rolls')
+    .select(`
+      id, weight, notes, created_at, updated_at, purchase_list_item_id,
+      roll_widths (id, width),
+      roll_types (id, name),
+      roll_thicknesses (id, thickness)
+    `)
+    .order('created_at', { ascending: false });
   if (error) { debug.error(MODULE, 'getRolls error', error); return { data: null, error: error.message }; }
-  return { data, error: null };
+  
+  const mapped = (data || []).map(r => ({
+    id: r.id,
+    weight: r.weight,
+    notes: r.notes,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+    purchase_list_item_id: r.purchase_list_item_id,
+    width_id: r.roll_widths?.id,
+    width_label: r.roll_widths?.width ? `${r.roll_widths.width}` : '',
+    type_id: r.roll_types?.id,
+    type_name: r.roll_types?.name || '',
+    thickness_id: r.roll_thicknesses?.id,
+    thickness_label: r.roll_thicknesses?.thickness ? `${r.roll_thicknesses.thickness}` : ''
+  }));
+  
+  return { data: mapped, error: null };
 }
 
 export async function getRollWidths() {
@@ -215,6 +245,15 @@ export async function getRollTypes() {
   return { data, error: null };
 }
 
+export async function getRollThicknesses() {
+  const { data, error } = await supabase
+    .from('roll_thicknesses')
+    .select('*')
+    .order('thickness', { ascending: true });
+  if (error) { debug.error(MODULE, 'getRollThicknesses error', error); return { data: null, error: error.message }; }
+  return { data, error: null };
+}
+
 export async function addRollWidth(width) {
   const { error } = await supabase
     .from('roll_widths')
@@ -231,14 +270,23 @@ export async function addRollType(name) {
   return { error: null };
 }
 
-export async function insertRoll(widthId, typeId, weight, notes) {
+export async function addRollThickness(thickness) {
+  const { error } = await supabase
+    .from('roll_thicknesses')
+    .insert({ thickness: parseFloat(thickness) });
+  if (error) { debug.error(MODULE, 'addRollThickness error', error); return { error: error.message }; }
+  return { error: null };
+}
+
+export async function insertRoll(widthId, typeId, weight, notes, thicknessId = null) {
   const { error } = await supabase
     .from('rolls')
     .insert({
       width_id: widthId,
       type_id: typeId,
       weight: parseFloat(weight) || 0,
-      notes: notes || null
+      notes: notes || null,
+      thickness_id: thicknessId
     });
   if (error) { debug.error(MODULE, 'insertRoll error', error); return { error: error.message }; }
   return { error: null };
@@ -268,6 +316,12 @@ export async function deleteRollWidth(id) {
 export async function deleteRollType(id) {
   const { error } = await supabase.from('roll_types').delete().eq('id', id);
   if (error) { debug.error(MODULE, 'deleteRollType error', error); return { error: error.message }; }
+  return { error: null };
+}
+
+export async function deleteRollThickness(id) {
+  const { error } = await supabase.from('roll_thicknesses').delete().eq('id', id);
+  if (error) { debug.error(MODULE, 'deleteRollThickness error', error); return { error: error.message }; }
   return { error: null };
 }
 
@@ -354,6 +408,29 @@ export async function addLiquidType(name) {
 export async function deleteLiquidType(id) {
   const { error } = await supabase.from('liquid_types').delete().eq('id', id);
   if (error) { debug.error(MODULE, 'deleteLiquidType error', error); return { error: error.message }; }
+  return { error: null };
+}
+
+export async function getLiquidVolumes() {
+  const { data, error } = await supabase
+    .from('liquid_volumes')
+    .select('*')
+    .order('volume', { ascending: true });
+  if (error) { debug.error(MODULE, 'getLiquidVolumes error', error); return { data: null, error: error.message }; }
+  return { data, error: null };
+}
+
+export async function addLiquidVolume(volume) {
+  const { error } = await supabase
+    .from('liquid_volumes')
+    .insert({ volume: parseFloat(volume) });
+  if (error) { debug.error(MODULE, 'addLiquidVolume error', error); return { error: error.message }; }
+  return { error: null };
+}
+
+export async function deleteLiquidVolume(id) {
+  const { error } = await supabase.from('liquid_volumes').delete().eq('id', id);
+  if (error) { debug.error(MODULE, 'deleteLiquidVolume error', error); return { error: error.message }; }
   return { error: null };
 }
 
@@ -471,6 +548,81 @@ export async function deleteInkColor(id) {
 export async function deleteInkWeight(id) {
   const { error } = await supabase.from('ink_weights').delete().eq('id', id);
   if (error) { debug.error(MODULE, 'deleteInkWeight error', error); return { error: error.message }; }
+  return { error: null };
+}
+
+// ▸▸▸ Glues (صمغ)
+
+export async function getGlueTypes() {
+  const { data, error } = await supabase
+    .from('glue_types')
+    .select('*')
+    .order('name', { ascending: true });
+  if (error) { debug.error(MODULE, 'getGlueTypes error', error); return { data: null, error: error.message }; }
+  return { data, error: null };
+}
+
+export async function addGlueType(name) {
+  const { error } = await supabase
+    .from('glue_types')
+    .insert({ name: name.trim() });
+  if (error) { debug.error(MODULE, 'addGlueType error', error); return { error: error.message }; }
+  return { error: null };
+}
+
+export async function deleteGlueType(id) {
+  const { error } = await supabase.from('glue_types').delete().eq('id', id);
+  if (error) { debug.error(MODULE, 'deleteGlueType error', error); return { error: error.message }; }
+  return { error: null };
+}
+
+export async function getGlueWeights() {
+  const { data, error } = await supabase
+    .from('glue_weights')
+    .select('*')
+    .order('weight', { ascending: true });
+  if (error) { debug.error(MODULE, 'getGlueWeights error', error); return { data: null, error: error.message }; }
+  return { data, error: null };
+}
+
+export async function addGlueWeight(weight) {
+  const { error } = await supabase
+    .from('glue_weights')
+    .insert({ weight: parseFloat(weight) });
+  if (error) { debug.error(MODULE, 'addGlueWeight error', error); return { error: error.message }; }
+  return { error: null };
+}
+
+export async function deleteGlueWeight(id) {
+  const { error } = await supabase.from('glue_weights').delete().eq('id', id);
+  if (error) { debug.error(MODULE, 'deleteGlueWeight error', error); return { error: error.message }; }
+  return { error: null };
+}
+
+export async function getGlues() {
+  const { data, error } = await supabase
+    .from('v_glues')
+    .select('*')
+    .order('type_name', { ascending: true });
+  if (error) { debug.error(MODULE, 'getGlues error', error); return { data: null, error: error.message }; }
+  return { data, error: null };
+}
+
+export async function upsertGlue(typeId, quantity, notes) {
+  const { error } = await supabase
+    .from('glues')
+    .upsert({
+      type_id: typeId,
+      quantity: parseFloat(quantity) || 0,
+      notes: notes || null
+    }, { onConflict: 'type_id' });
+  if (error) { debug.error(MODULE, 'upsertGlue error', error); return { error: error.message }; }
+  return { error: null };
+}
+
+export async function deleteGlue(id) {
+  const { error } = await supabase.from('glues').delete().eq('id', id);
+  if (error) { debug.error(MODULE, 'deleteGlue error', error); return { error: error.message }; }
   return { error: null };
 }
 
@@ -651,11 +803,61 @@ export async function updateOrder(id, updates) {
 export async function deleteOrder(id) {
   const { valid, missing } = validateEnv();
   if (!valid) return { error: 'Env not configured' };
+
+  // 1. Fetch matching ready orders
+  const { data: readyOrders, error: fetchErr } = await supabase
+    .from('ready_orders')
+    .select('id')
+    .eq('order_id', id);
+
+  if (fetchErr) {
+    debug.error(MODULE, 'deleteOrder - fetch ready_orders error', fetchErr);
+    return { error: fetchErr.message };
+  }
+
+  // 2. Delete related rolls & ready orders
+  if (readyOrders && readyOrders.length > 0) {
+    const readyIds = readyOrders.map(r => r.id);
+    
+    // Delete from ready_order_rolls
+    const { error: rollsErr } = await supabase
+      .from('ready_order_rolls')
+      .delete()
+      .in('order_id', readyIds);
+      
+    if (rollsErr) {
+      debug.error(MODULE, 'deleteOrder - delete ready_order_rolls error', rollsErr);
+      return { error: rollsErr.message };
+    }
+
+    // Delete from ready_orders
+    const { error: roErr } = await supabase
+      .from('ready_orders')
+      .delete()
+      .in('id', readyIds);
+
+    if (roErr) {
+      debug.error(MODULE, 'deleteOrder - delete ready_orders error', roErr);
+      return { error: roErr.message };
+    }
+  }
+
+  // 3. Delete from order_forms (production forms linked to order)
+  const { error: ofErr } = await supabase
+    .from('order_forms')
+    .delete()
+    .eq('order_id', id);
+  if (ofErr) {
+    debug.error(MODULE, 'deleteOrder - delete order_forms error', ofErr);
+  }
+
+  // 4. Delete the base order
   const { error } = await supabase
     .from('orders')
     .delete()
     .eq('id', id);
   if (error) { debug.error(MODULE, 'deleteOrder error', error); return { error: error.message }; }
+  
   return { error: null };
 }
 
@@ -793,6 +995,20 @@ export async function addDamagedRecord(record) {
   return { data, error: null };
 }
 
+export async function deleteDamagedRecord(id) {
+  const { valid, missing } = validateEnv();
+  if (!valid) return { error: 'Env not configured' };
+  const { error } = await supabase
+    .from('damaged_records')
+    .delete()
+    .eq('id', id);
+  if (error) {
+    debug.error(MODULE, 'deleteDamagedRecord error', error);
+    return { error: error.message };
+  }
+  return { error: null };
+}
+
 export async function getAutofillData() {
   const { valid, missing } = validateEnv();
   if (!valid) return { data: null, error: 'Env not configured' };
@@ -825,6 +1041,372 @@ export async function getAutofillData() {
       assistants,
       organizers,
       customers: customerMap
+    },
+    error: null
+  };
+}
+
+export async function getWithdrawalRecords() {
+  const { data, error } = await supabase
+    .from('withdrawal_records')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) { debug.error(MODULE, 'getWithdrawalRecords error', error); return { data: null, error: error.message }; }
+  return { data, error: null };
+}
+
+export async function addWithdrawalRecord(record) {
+  const { data, error } = await supabase
+    .from('withdrawal_records')
+    .insert(record)
+    .select()
+    .single();
+  if (error) { debug.error(MODULE, 'addWithdrawalRecord error', error); return { data: null, error: error.message }; }
+  return { data, error: null };
+}
+
+export async function getStorageSummary(duration) {
+  let startDate = null;
+  let endDate = null;
+
+  if (duration === 'week') {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    startDate = d.toISOString().split('T')[0];
+  } else if (duration === 'month') {
+    const d = new Date();
+    d.setDate(d.getDate() - 30);
+    startDate = d.toISOString().split('T')[0];
+  } else if (duration && typeof duration === 'object' && duration.start) {
+    startDate = duration.start;
+    endDate = duration.end;
+  }
+
+  // 1. Query Confirmed Purchases
+  let purchasesQuery = supabase
+    .from('purchase_list_items')
+    .select('item_type, variant_id_1, variant_id_2, weight_id, quantity, unit, purchase_lists!inner(status, purchase_date)')
+    .eq('purchase_lists.status', 'confirmed');
+
+  if (startDate) {
+    purchasesQuery = purchasesQuery.gte('purchase_lists.purchase_date', startDate);
+  }
+  if (endDate) {
+    purchasesQuery = purchasesQuery.lte('purchase_lists.purchase_date', endDate);
+  }
+
+  // 2. Query Withdrawals
+  let withdrawalsQuery = supabase.from('withdrawal_records').select('*');
+  if (startDate) {
+    withdrawalsQuery = withdrawalsQuery.gte('created_at', startDate + 'T00:00:00Z');
+  }
+  if (endDate) {
+    withdrawalsQuery = withdrawalsQuery.lte('created_at', endDate + 'T23:59:59Z');
+  }
+
+  // 3. Query Damages
+  let damagesQuery = supabase.from('damaged_records').select('*');
+  if (startDate) {
+    damagesQuery = damagesQuery.gte('created_at', startDate + 'T00:00:00Z');
+  }
+  if (endDate) {
+    damagesQuery = damagesQuery.lte('created_at', endDate + 'T23:59:59Z');
+  }
+
+  // 4. Fetch Active Stocks & Lookups
+  const [
+    purchasesRes, withdrawalsRes, damagesRes,
+    rollsRes, pipesRes, liquidsRes, inksRes, gluesRes,
+    widthsRes, typesRes, thicknessesRes,
+    companiesRes, colorsRes, liquidTypesRes, glueTypesRes
+  ] = await Promise.all([
+    purchasesQuery,
+    withdrawalsQuery,
+    damagesQuery,
+    getRolls(),
+    getPipes(),
+    getLiquids(),
+    getInks(),
+    getGlues(),
+    getRollWidths(),
+    getRollTypes(),
+    getRollThicknesses(),
+    getInkCompanies(),
+    getInkColors(),
+    getLiquidTypes(),
+    getGlueTypes()
+  ]);
+
+  if (purchasesRes.error) return { data: null, error: purchasesRes.error.message };
+  if (withdrawalsRes.error) return { data: null, error: withdrawalsRes.error.message };
+  if (damagesRes.error) return { data: null, error: damagesRes.error.message };
+
+  const purchases = purchasesRes.data || [];
+  const withdrawals = withdrawalsRes.data || [];
+  const damages = damagesRes.data || [];
+
+  const activeRolls = rollsRes.data || [];
+  const activePipes = pipesRes.data || [];
+  const activeLiquids = liquidsRes.data || [];
+  const activeInks = inksRes.data || [];
+  const activeGlues = gluesRes.data || [];
+
+  const widths = widthsRes.data || [];
+  const rollTypes = typesRes.data || [];
+  const thicknesses = thicknessesRes.data || [];
+  const inkCompanies = companiesRes.data || [];
+  const inkColors = colorsRes.data || [];
+  const liquidTypes = liquidTypesRes.data || [];
+  const glueTypes = glueTypesRes.data || [];
+
+  // Helper Maps for quick label lookup
+  const widthMap = Object.fromEntries(widths.map(w => [w.id, w.width]));
+  const rollTypeMap = Object.fromEntries(rollTypes.map(t => [t.id, t.name]));
+  const thicknessMap = Object.fromEntries(thicknesses.map(t => [t.id, t.thickness]));
+  const inkCompanyMap = Object.fromEntries(inkCompanies.map(c => [c.id, c.name]));
+  const inkColorMap = Object.fromEntries(inkColors.map(c => [c.id, c.name]));
+  const liquidTypeMap = Object.fromEntries(liquidTypes.map(t => [t.id, t.name]));
+  const glueTypeMap = Object.fromEntries(glueTypes.map(t => [t.id, t.name]));
+
+  // AGGREGATION CONTAINERS
+  const summary = {
+    rolls: {},
+    inks: {},
+    liquids: {},
+    glues: {},
+    pipes: {}
+  };
+
+  // --- 1. AGGREGATE ROLLS ---
+  const addRollKey = (typeId, thicknessId, widthId) => {
+    const key = `${typeId}_${thicknessId}_${widthId}`;
+    if (!summary.rolls[key]) {
+      const typeName = rollTypeMap[typeId] || 'غير معروف';
+      const thickLabel = thicknessMap[thicknessId] || '';
+      const widthLabel = widthMap[widthId] || '';
+      // Name format: Section Thickness Width (no units)
+      const name = `${typeName} ${thickLabel} ${widthLabel}`.trim();
+      summary.rolls[key] = {
+        key,
+        type_id: typeId,
+        thickness_id: thicknessId,
+        width_id: widthId,
+        name,
+        type_name: typeName,
+        received: 0,
+        used: 0,
+        available: 0
+      };
+    }
+    return key;
+  };
+
+  // Active Rolls (All time available stock)
+  activeRolls.forEach(r => {
+    if (r.type_id && r.width_id) {
+      const key = addRollKey(r.type_id, r.thickness_id, r.width_id);
+      summary.rolls[key].available += parseFloat(r.weight) || 0;
+    }
+  });
+
+  // Roll Purchases (Received within date filter)
+  purchases.filter(p => p.item_type === 'roll').forEach(p => {
+    if (p.variant_id_1 && p.variant_id_2) {
+      const key = addRollKey(p.variant_id_2, p.weight_id, p.variant_id_1);
+      summary.rolls[key].received += parseFloat(p.quantity) || 0;
+    }
+  });
+
+  // Roll Withdrawals (Used within date filter)
+  withdrawals.filter(w => w.item_type === 'roll').forEach(w => {
+    if (w.variant_id_1 && w.variant_id_3) {
+      const key = addRollKey(w.variant_id_3, w.variant_id_2, w.variant_id_1);
+      summary.rolls[key].used += parseFloat(w.quantity) || 0;
+    }
+  });
+
+  // Roll Damages (Used within date filter)
+  damages.filter(d => d.item_type === 'roll').forEach(d => {
+    const matchingKey = Object.keys(summary.rolls).find(k => {
+      const r = summary.rolls[k];
+      return r.type_id === d.variant_id_2 && r.width_id === d.variant_id_1;
+    });
+    if (matchingKey) {
+      summary.rolls[matchingKey].used += parseFloat(d.quantity) || 0;
+    } else {
+      const key = addRollKey(d.variant_id_2, null, d.variant_id_1);
+      summary.rolls[key].used += parseFloat(d.quantity) || 0;
+    }
+  });
+
+
+  // --- 2. AGGREGATE INKS ---
+  const addInkKey = (companyId, colorId) => {
+    const key = `${companyId}_${colorId}`;
+    if (!summary.inks[key]) {
+      const companyName = inkCompanyMap[companyId] || 'غير معروف';
+      const colorName = inkColorMap[colorId] || 'غير معروف';
+      summary.inks[key] = {
+        key,
+        company_id: companyId,
+        color_id: colorId,
+        company_name: companyName,
+        color_name: colorName,
+        received: 0,
+        used: 0,
+        available: 0
+      };
+    }
+    return key;
+  };
+
+  activeInks.forEach(i => {
+    const key = addInkKey(i.company_id, i.color_id);
+    summary.inks[key].available += parseFloat(i.quantity) || 0;
+  });
+
+  purchases.filter(p => p.item_type === 'ink').forEach(p => {
+    const key = addInkKey(p.variant_id_1, p.variant_id_2);
+    summary.inks[key].received += parseFloat(p.quantity) || 0;
+  });
+
+  withdrawals.filter(w => w.item_type === 'ink').forEach(w => {
+    const key = addInkKey(w.variant_id_1, w.variant_id_2);
+    summary.inks[key].used += parseFloat(w.quantity) || 0;
+  });
+
+  damages.filter(d => d.item_type === 'ink').forEach(d => {
+    const key = addInkKey(d.variant_id_1, d.variant_id_2);
+    summary.inks[key].used += parseFloat(d.quantity) || 0;
+  });
+
+
+  // --- 3. AGGREGATE LIQUIDS ---
+  const addLiquidKey = (typeId) => {
+    const key = `${typeId}`;
+    if (!summary.liquids[key]) {
+      const name = liquidTypeMap[typeId] || 'غير معروف';
+      summary.liquids[key] = {
+        key,
+        type_id: typeId,
+        name,
+        received: 0,
+        used: 0,
+        available: 0
+      };
+    }
+    return key;
+  };
+
+  activeLiquids.forEach(l => {
+    const key = addLiquidKey(l.type_id);
+    summary.liquids[key].available += parseFloat(l.quantity) || 0;
+  });
+
+  purchases.filter(p => p.item_type === 'liquid').forEach(p => {
+    const key = addLiquidKey(p.variant_id_1);
+    summary.liquids[key].received += parseFloat(p.quantity) || 0;
+  });
+
+  withdrawals.filter(w => w.item_type === 'liquid').forEach(w => {
+    const key = addLiquidKey(w.variant_id_1);
+    summary.liquids[key].used += parseFloat(w.quantity) || 0;
+  });
+
+  damages.filter(d => d.item_type === 'liquid').forEach(d => {
+    const key = addLiquidKey(d.variant_id_1);
+    summary.liquids[key].used += parseFloat(d.quantity) || 0;
+  });
+
+
+  // --- 4. AGGREGATE GLUES ---
+  const addGlueKey = (typeId) => {
+    const key = `${typeId}`;
+    if (!summary.glues[key]) {
+      const name = glueTypeMap[typeId] || 'غير معروف';
+      summary.glues[key] = {
+        key,
+        type_id: typeId,
+        name,
+        received: 0,
+        used: 0,
+        available: 0
+      };
+    }
+    return key;
+  };
+
+  activeGlues.forEach(g => {
+    const key = addGlueKey(g.type_id);
+    summary.glues[key].available += parseFloat(g.quantity) || 0;
+  });
+
+  purchases.filter(p => p.item_type === 'glue').forEach(p => {
+    const key = addGlueKey(p.variant_id_1);
+    summary.glues[key].received += parseFloat(p.quantity) || 0;
+  });
+
+  withdrawals.filter(w => w.item_type === 'glue').forEach(w => {
+    const key = addGlueKey(w.variant_id_1);
+    summary.glues[key].used += parseFloat(w.quantity) || 0;
+  });
+
+  damages.filter(d => d.item_type === 'glue').forEach(d => {
+    const key = addGlueKey(d.variant_id_1);
+    summary.glues[key].used += parseFloat(d.quantity) || 0;
+  });
+
+
+  // --- 5. AGGREGATE PIPES ---
+  const addPipeKey = (lengthId) => {
+    const key = `${lengthId}`;
+    if (!summary.pipes[key]) {
+      const activePipeObj = activePipes.find(ap => ap.length_id === lengthId);
+      const lengthVal = activePipeObj?.length_label || `${lengthId}`;
+      summary.pipes[key] = {
+        key,
+        length_id: lengthId,
+        length: lengthVal,
+        received: 0,
+        used: 0,
+        available: 0,
+        available_weight: 0
+      };
+    }
+    return key;
+  };
+
+  activePipes.forEach(p => {
+    const key = addPipeKey(p.length_id);
+    summary.pipes[key].available += p.quantity || 0;
+    // Extract pipe weight from notes if logged (e.g. "weight: 0.95")
+    const weightMatch = p.notes?.match(/weight:\s*([0-9.]+)/i);
+    const pipeWeight = weightMatch ? parseFloat(weightMatch[1]) : 0;
+    summary.pipes[key].available_weight = (p.quantity || 0) * pipeWeight;
+  });
+
+  purchases.filter(p => p.item_type === 'pipe').forEach(p => {
+    const key = addPipeKey(p.variant_id_1);
+    summary.pipes[key].received += parseInt(p.quantity) || 0;
+  });
+
+  withdrawals.filter(w => w.item_type === 'pipe').forEach(w => {
+    const key = addPipeKey(w.variant_id_1);
+    summary.pipes[key].used += parseInt(w.quantity) || 0;
+  });
+
+  damages.filter(d => d.item_type === 'pipe').forEach(d => {
+    const key = addPipeKey(d.variant_id_1);
+    summary.pipes[key].used += parseInt(d.quantity) || 0;
+  });
+
+  return {
+    data: {
+      rolls: Object.values(summary.rolls),
+      inks: Object.values(summary.inks),
+      liquids: Object.values(summary.liquids),
+      glues: Object.values(summary.glues),
+      pipes: Object.values(summary.pipes)
     },
     error: null
   };

@@ -29,16 +29,19 @@ export default function Settings() {
 
   const tabs = [
     { id: 'users', label: 'المستخدمين' },
-
     { id: 'print_settings', label: 'إعدادات الطباعة' },
     { id: 'purchase_offices', label: 'مكاتب الشراء' },
     { id: 'roll_widths', label: 'عروض الرولات' },
     { id: 'roll_types', label: 'أنواع الرولات' },
+    { id: 'roll_thicknesses', label: 'سماكات الرولات (ميكرون)' },
     { id: 'pipe_lengths', label: 'أطوال المواسير' },
     { id: 'liquid_types', label: 'أنواع السوائل' },
+    { id: 'liquid_volumes', label: 'حجوم براميل السوائل' },
     { id: 'ink_companies', label: 'شركات الأحبار' },
     { id: 'ink_colors', label: 'ألوان الأحبار' },
-    { id: 'ink_weights', label: 'أوزان الأحبار' }
+    { id: 'ink_weights', label: 'أوزان الأحبار' },
+    { id: 'glue_types', label: 'أنواع الصمغ' },
+    { id: 'glue_weights', label: 'أوزان براميل الصمغ' }
   ];
 
   return (
@@ -65,11 +68,15 @@ export default function Settings() {
           {activeTab === 'purchase_offices' && <VariationManager entity="purchase_offices" />}
           {activeTab === 'roll_widths' && <VariationManager entity="roll_widths" />}
           {activeTab === 'roll_types' && <VariationManager entity="roll_types" />}
+          {activeTab === 'roll_thicknesses' && <VariationManager entity="roll_thicknesses" />}
           {activeTab === 'pipe_lengths' && <VariationManager entity="pipe_lengths" />}
           {activeTab === 'liquid_types' && <VariationManager entity="liquid_types" />}
+          {activeTab === 'liquid_volumes' && <VariationManager entity="liquid_volumes" />}
           {activeTab === 'ink_companies' && <VariationManager entity="ink_companies" />}
           {activeTab === 'ink_colors' && <VariationManager entity="ink_colors" />}
           {activeTab === 'ink_weights' && <VariationManager entity="ink_weights" />}
+          {activeTab === 'glue_types' && <VariationManager entity="glue_types" />}
+          {activeTab === 'glue_weights' && <VariationManager entity="glue_weights" />}
         </div>
       </div>
     </div>

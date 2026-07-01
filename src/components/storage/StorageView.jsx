@@ -1,23 +1,126 @@
-import { useState, useEffect, useRef } from 'react';
-import {
-  getRolls, getRollWidths, getRollTypes,
-  getPipes, getPipeLengths,
-  getLiquids, getLiquidTypes,
-  getInks, getInkCompanies, getInkColors
-} from '../../lib/database.js';
+import { useState, useEffect, useCallback } from 'react';
+import { getStorageSummary } from '../../lib/database.js';
 
 const storageTabs = [
-  { id: 'rolls', label: 'رولات' },
-  { id: 'pipes', label: 'مواسير' },
-  { id: 'liquids', label: 'سوائل' },
-  { id: 'inks', label: 'أحبار' }
+  { id: 'rolls', label: 'رولات خام', icon: 'رولات' },
+  { id: 'inks', label: 'أحبار', icon: 'أحبار' },
+  { id: 'liquids', label: 'سوائل', icon: 'سوائل' },
+  { id: 'glues', label: 'صمغ', icon: 'صمغ' },
+  { id: 'pipes', label: 'مواسير', icon: 'مواسير' }
 ];
 
 export default function StorageView() {
   const [activeTab, setActiveTab] = useState('rolls');
+  const [duration, setDuration] = useState('all'); // 'all', 'week', 'month', 'custom'
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [summaryData, setSummaryData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const fetchSummary = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    let durParam = duration;
+    if (duration === 'custom') {
+      if (!startDate || !endDate) {
+        setLoading(false);
+        return;
+      }
+      durParam = { start: startDate, end: endDate };
+    }
+
+    const { data, error: err } = await getStorageSummary(durParam);
+    setLoading(false);
+    if (err) {
+      setError(err);
+    } else {
+      setSummaryData(data);
+    }
+  }, [duration, startDate, endDate]);
+
+  useEffect(() => {
+    fetchSummary();
+  }, [fetchSummary]);
+
+  const handleCustomApply = (e) => {
+    e.preventDefault();
+    fetchSummary();
+  };
+
+  if (loading && !summaryData) {
+    return <div className="storage-loading"><div className="spinner"></div><p>جاري تحميل بيانات الجرد والمخزن...</p></div>;
+  }
 
   return (
-    <div className="storage-dashboard">
+    <div className="storage-view-dashboard" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      
+      {/* Duration Control Panel */}
+      <div className="card duration-filter-card" style={{ padding: '1rem', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontWeight: 'bold', fontSize: '0.95rem' }}>📅 فترة حساب الوارد والمستهلك:</span>
+            <div className="btn-group" style={{ display: 'flex', gap: '0.35rem' }}>
+              <button
+                type="button"
+                className={`btn btn-small ${duration === 'all' ? 'btn-primary' : 'btn-outline'}`}
+                onClick={() => setDuration('all')}
+              >
+                الكل (All Time)
+              </button>
+              <button
+                type="button"
+                className={`btn btn-small ${duration === 'week' ? 'btn-primary' : 'btn-outline'}`}
+                onClick={() => setDuration('week')}
+              >
+                آخر أسبوع
+              </button>
+              <button
+                type="button"
+                className={`btn btn-small ${duration === 'month' ? 'btn-primary' : 'btn-outline'}`}
+                onClick={() => setDuration('month')}
+              >
+                آخر شهر
+              </button>
+              <button
+                type="button"
+                className={`btn btn-small ${duration === 'custom' ? 'btn-primary' : 'btn-outline'}`}
+                onClick={() => setDuration('custom')}
+              >
+                فترة مخصصة
+              </button>
+            </div>
+          </div>
+
+          {duration === 'custom' && (
+            <form onSubmit={handleCustomApply} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                required
+                style={{ padding: '0.25rem 0.5rem', height: '34px', fontSize: '0.9rem' }}
+              />
+              <span style={{ fontSize: '0.85rem' }}>إلى</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                required
+                style={{ padding: '0.25rem 0.5rem', height: '34px', fontSize: '0.9rem' }}
+              />
+              <button type="submit" className="btn btn-small btn-primary" style={{ padding: '0 0.75rem', height: '34px' }}>تطبيق</button>
+            </form>
+          )}
+        </div>
+        <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          * ملاحظة: الفلتر الزمني يؤثر على الكميات المستلمة والمستخدمة فقط، أما الباقي/المتاح فهو دائم وتراكمي لجميع الأوقات.
+        </div>
+      </div>
+
+      {error && <div className="error-banner">{error}</div>}
+
+      {/* Main Inventory Tabs */}
       <div className="storage-tabs-header">
         {storageTabs.map((tab) => (
           <button
@@ -30,394 +133,295 @@ export default function StorageView() {
         ))}
       </div>
 
+      {/* Tab Panels */}
       <div className="storage-tab-content">
-        {activeTab === 'rolls' && <ViewRolls />}
-        {activeTab === 'pipes' && <ViewPipes />}
-        {activeTab === 'liquids' && <ViewLiquids />}
-        {activeTab === 'inks' && <ViewInks />}
-      </div>
-    </div>
-  );
-}
-
-/* ── Stats Bar ───────────────────────────────────────── */
-
-function StatsBar({ totalItems, totalQuantity, label }) {
-  return (
-    <div className="storage-stats-bar">
-      <div className="stat-item">
-        <span className="stat-label">الأنواع</span>
-        <span className="stat-value">{totalItems}</span>
-      </div>
-      <div className="stat-item">
-        <span className="stat-label">الإجمالي</span>
-        <span className="stat-value mono">{totalQuantity}</span>
-        <span className="stat-unit">{label}</span>
-      </div>
-    </div>
-  );
-}
-
-/* ── Rolls View ──────────────────────────────────────── */
-
-function ViewRolls() {
-  const [items, setItems] = useState([]);
-  const [widths, setWidths] = useState([]);
-  const [types, setTypes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  const hasFetched = useRef(false);
-
-  const fetchAll = async () => {
-    setLoading(true);
-    setError('');
-    const [itemsRes, wRes, tRes] = await Promise.all([
-      getRolls(), getRollWidths(), getRollTypes()
-    ]);
-    setLoading(false);
-    if (itemsRes.error) setError(itemsRes.error);
-    else setItems(itemsRes.data || []);
-    if (wRes.error) setError((prev) => prev || wRes.error);
-    else setWidths(wRes.data || []);
-    if (tRes.error) setError((prev) => prev || tRes.error);
-    else setTypes(tRes.data || []);
-  };
-
-  useEffect(() => {
-    if (!hasFetched.current) {
-      hasFetched.current = true;
-      fetchAll();
-    }
-  }, []);
-
-  if (loading && items.length === 0) {
-    return <div className="storage-loading"><div className="spinner"></div><p>جاري تحميل الرولات...</p></div>;
-  }
-
-  const totalWeight = items.reduce((sum, i) => sum + (parseFloat(i.weight) || 0), 0);
-
-  return (
-    <div className="storage-view-entity">
-      {error && <div className="error-banner">{error}</div>}
-
-      <StatsBar totalItems={items.length} totalQuantity={totalWeight.toFixed(2)} label="kg" />
-
-      <div className="storage-view-panel">
-        <h3>رولات المخزن ({items.length})</h3>
-        {items.length === 0 ? (
-          <div className="empty-state">لا توجد رولات مسجلة بعد</div>
-        ) : (
-          <div className="storage-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>العرض</th>
-                  <th>النوع</th>
-                  <th>الوزن (kg)</th>
-                  <th>ملاحظات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item.id}>
-                    <td><span className="mono">#{item.id}</span></td>
-                    <td><span className="mono">{item.width_label}</span></td>
-                    <td>{item.type_name}</td>
-                    <td><strong className="mono">{item.weight}</strong></td>
-                    <td className="notes-cell">{item.notes || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {summaryData && (
+          <>
+            {activeTab === 'rolls' && <RollsInventoryView data={summaryData.rolls} />}
+            {activeTab === 'inks' && <InksInventoryView data={summaryData.inks} />}
+            {activeTab === 'liquids' && <LiquidsInventoryView data={summaryData.liquids} />}
+            {activeTab === 'glues' && <GluesInventoryView data={summaryData.glues} />}
+            {activeTab === 'pipes' && <PipesInventoryView data={summaryData.pipes} />}
+          </>
         )}
       </div>
 
-      <div className="storage-lookups-info">
-        <div className="lookup-info-card">
-          <h4>العروض المتاحة</h4>
-          <div className="lookup-tags">
-            {Array.from(new Set(items.map(item => item.width_label))).filter(Boolean).sort().map((wLabel, index) => (
-              <span key={index} className="lookup-tag">{wLabel} cm</span>
-            ))}
+    </div>
+  );
+}
+
+/* ===========================================================================
+   A. ROLLS VIEW (رول خام)
+   =========================================================================== */
+function RollsInventoryView({ data = [] }) {
+  // Vertically listed sections: متاليزا, شفاف opp, مات opp, PET, LDPE, CPP
+  const sections = [
+    { title: 'متاليزا', key: 'metallized', match: (t) => t.includes('متاليزا') || t.toLowerCase().includes('metallized') },
+    { title: 'شفاف opp', key: 'transparent', match: (t) => t.toLowerCase().includes('شفاف') || t.toLowerCase().includes('transparent') },
+    { title: 'مات opp', key: 'matt', match: (t) => t.toLowerCase().includes('مات') || t.toLowerCase().includes('matt') },
+    { title: 'PET', key: 'pet', match: (t) => t.toLowerCase().includes('pet') },
+    { title: 'LDPE', key: 'ldpe', match: (t) => t.toLowerCase().includes('ldpe') || t.toLowerCase().includes('pe') },
+    { title: 'CPP', key: 'cpp', match: (t) => t.toLowerCase().includes('cpp') }
+  ];
+
+  const getRollSectionTitle = (typeName) => {
+    const sec = sections.find(s => s.match(typeName));
+    return sec ? sec.title : 'أخرى';
+  };
+
+  // Group items by section
+  const grouped = {};
+  sections.forEach(s => grouped[s.title] = []);
+  grouped['أخرى'] = [];
+
+  data.forEach(item => {
+    const secTitle = getRollSectionTitle(item.type_name || '');
+    grouped[secTitle].push(item);
+  });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {Object.entries(grouped).map(([sectionTitle, items]) => {
+        if (items.length === 0) return null;
+        return (
+          <div key={sectionTitle} className="storage-view-panel" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '1.25rem' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)', borderBottom: '2px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+              📁 قسم: {sectionTitle}
+            </h3>
+            <div className="storage-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>اسم المادة</th>
+                    <th>الكمية المستلمة (kg)</th>
+                    <th>الكمية المستخدمة (kg)</th>
+                    <th>الباقي / المتاح (kg)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr key={item.key}>
+                      <td><strong>{item.name}</strong></td>
+                      <td><span className="mono text-muted">{item.received?.toFixed(2) || '0.00'}</span></td>
+                      <td><span className="mono text-muted">{item.used?.toFixed(2) || '0.00'}</span></td>
+                      <td><span className="mono bold color-success" style={{ fontSize: '1.05rem', color: 'var(--primary)' }}>{item.available?.toFixed(2) || '0.00'}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-        <div className="lookup-info-card">
-          <h4>الأنواع المتاحة</h4>
-          <div className="lookup-tags">
-            {Array.from(new Set(items.map(item => item.type_name))).filter(Boolean).sort().map((tName, index) => (
-              <span key={index} className="lookup-tag">{tName}</span>
-            ))}
+        );
+      })}
+    </div>
+  );
+}
+
+/* ===========================================================================
+   B. INKS VIEW (أحبار)
+   =========================================================================== */
+function InksInventoryView({ data = [] }) {
+  // Vertically listed sections: احبار عراق, احبار تركيا
+  const sections = [
+    { title: 'احبار عراق', match: (c) => c.includes('عراق') },
+    { title: 'احبار تركيا', match: (c) => c.includes('تركيا') }
+  ];
+
+  const getInkSectionTitle = (companyName) => {
+    const sec = sections.find(s => s.match(companyName));
+    return sec ? sec.title : 'أخرى';
+  };
+
+  const grouped = {};
+  sections.forEach(s => grouped[s.title] = []);
+  grouped['أخرى'] = [];
+
+  data.forEach(item => {
+    const secTitle = getInkSectionTitle(item.company_name || '');
+    grouped[secTitle].push(item);
+  });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {Object.entries(grouped).map(([sectionTitle, items]) => {
+        if (items.length === 0) return null;
+        return (
+          <div key={sectionTitle} className="storage-view-panel" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '1.25rem' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)', borderBottom: '2px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+              📁 قسم: {sectionTitle}
+            </h3>
+            <div className="storage-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>الشركة المصنعة</th>
+                    <th>اللون</th>
+                    <th>الكمية المستلمة (kg)</th>
+                    <th>الكمية المستخدمة (kg)</th>
+                    <th>الباقي / المتاح (kg)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr key={item.key}>
+                      <td>{item.company_name}</td>
+                      <td><strong>{item.color_name}</strong></td>
+                      <td><span className="mono text-muted">{item.received?.toFixed(2) || '0.00'}</span></td>
+                      <td><span className="mono text-muted">{item.used?.toFixed(2) || '0.00'}</span></td>
+                      <td><span className="mono bold" style={{ fontSize: '1.05rem', color: 'var(--primary)' }}>{item.available?.toFixed(2) || '0.00'}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ===========================================================================
+   C. LIQUIDS VIEW (سوائل)
+   =========================================================================== */
+function LiquidsInventoryView({ data = [] }) {
+  // Vertically listed sections: كحول - العراق, كحول تركيا
+  const sections = [
+    { title: 'كحول - العراق', match: (t) => t.includes('عراق') || t.includes('العراق') },
+    { title: 'كحول تركيا', match: (t) => t.includes('تركيا') }
+  ];
+
+  const getLiquidSectionTitle = (typeName) => {
+    const sec = sections.find(s => s.match(typeName));
+    return sec ? sec.title : 'أخرى';
+  };
+
+  const grouped = {};
+  sections.forEach(s => grouped[s.title] = []);
+  grouped['أخرى'] = [];
+
+  data.forEach(item => {
+    const secTitle = getLiquidSectionTitle(item.name || '');
+    grouped[secTitle].push(item);
+  });
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      {Object.entries(grouped).map(([sectionTitle, items]) => {
+        if (items.length === 0) return null;
+        return (
+          <div key={sectionTitle} className="storage-view-panel" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '1.25rem' }}>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)', borderBottom: '2px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+              📁 قسم: {sectionTitle}
+            </h3>
+            <div className="storage-table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>اسم المادة</th>
+                    <th>الكمية المستلمة (L)</th>
+                    <th>الكمية المستخدمة (L)</th>
+                    <th>الباقي / المتاح (L)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr key={item.key}>
+                      <td><strong>{item.name}</strong></td>
+                      <td><span className="mono text-muted">{item.received?.toFixed(2) || '0.00'}</span></td>
+                      <td><span className="mono text-muted">{item.used?.toFixed(2) || '0.00'}</span></td>
+                      <td><span className="mono bold" style={{ fontSize: '1.05rem', color: 'var(--primary)' }}>{item.available?.toFixed(2) || '0.00'}</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ===========================================================================
+   D. GLUES VIEW (صمغ)
+   =========================================================================== */
+function GluesInventoryView({ data = [] }) {
+  // Vertically listed sections: صمغ لامينيشن
+  return (
+    <div className="storage-view-panel" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '1.25rem' }}>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)', borderBottom: '2px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+        📁 قسم: صمغ لامينيشن
+      </h3>
+      <div className="storage-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>اسم المادة</th>
+              <th>الكمية المستلمة (kg)</th>
+              <th>الكمية المستخدمة (kg)</th>
+              <th>الباقي / المتاح (kg)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((item) => (
+              <tr key={item.key}>
+                <td><strong>{item.name}</strong></td>
+                <td><span className="mono text-muted">{item.received?.toFixed(2) || '0.00'}</span></td>
+                <td><span className="mono text-muted">{item.used?.toFixed(2) || '0.00'}</span></td>
+                <td><span className="mono bold" style={{ fontSize: '1.05rem', color: 'var(--primary)' }}>{item.available?.toFixed(2) || '0.00'}</span></td>
+              </tr>
+            ))}
+            {data.length === 0 && (
+              <tr>
+                <td colSpan="4" className="empty-state" style={{ textAlign: 'center', padding: '2rem 0' }}>لا يوجد صمغ مسجل حالياً</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
 
-/* ── Pipes View ──────────────────────────────────────── */
-
-function ViewPipes() {
-  const [items, setItems] = useState([]);
-  const [lengths, setLengths] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  const hasFetched = useRef(false);
-
-  const fetchAll = async () => {
-    setLoading(true);
-    setError('');
-    const [itemsRes, lengthsRes] = await Promise.all([getPipes(), getPipeLengths()]);
-    setLoading(false);
-    if (itemsRes.error) setError(itemsRes.error);
-    else setItems(itemsRes.data || []);
-    if (lengthsRes.error) setError((prev) => prev || lengthsRes.error);
-    else setLengths(lengthsRes.data || []);
-  };
-
-  useEffect(() => {
-    if (!hasFetched.current) {
-      hasFetched.current = true;
-      fetchAll();
-    }
-  }, []);
-
-  if (loading && items.length === 0) {
-    return <div className="storage-loading"><div className="spinner"></div><p>جاري تحميل المواسير...</p></div>;
-  }
-
-  const activeItems = items.filter(i => (parseFloat(i.quantity) || 0) > 0);
-  const totalQuantity = activeItems.reduce((sum, i) => sum + (parseFloat(i.quantity) || 0), 0);
-
+/* ===========================================================================
+   E. PIPES VIEW (مواسير)
+   =========================================================================== */
+function PipesInventoryView({ data = [] }) {
+  // Vertically listed sections: ماسورة
   return (
-    <div className="storage-view-entity">
-      {error && <div className="error-banner">{error}</div>}
-
-      <StatsBar totalItems={activeItems.length} totalQuantity={totalQuantity} label="pcs" />
-
-      <div className="storage-view-panel">
-        <h3>مواسير المخزن ({activeItems.length})</h3>
-        {activeItems.length === 0 ? (
-          <div className="empty-state">لا توجد مواسير مسجلة بعد</div>
-        ) : (
-          <div className="storage-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>الطول</th>
-                  <th>الكمية</th>
-                  <th>ملاحظات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activeItems.map((item) => (
-                  <tr key={item.id}>
-                    <td><span className="mono">{item.length_label}</span></td>
-                    <td><strong>{item.quantity}</strong></td>
-                    <td className="notes-cell">{item.notes || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      <div className="storage-lookups-info">
-        <div className="lookup-info-card">
-          <h4>الأطوال المتاحة</h4>
-          <div className="lookup-tags">
-            {Array.from(new Set(activeItems.map(item => item.length_label))).filter(Boolean).sort().map((lLabel, index) => (
-              <span key={index} className="lookup-tag">{lLabel} cm</span>
+    <div className="storage-view-panel" style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', padding: '1.25rem' }}>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--primary)', borderBottom: '2px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>
+        📁 قسم: ماسورة
+      </h3>
+      <div className="storage-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>الطول</th>
+              <th>العدد المستلم (قطعة)</th>
+              <th>العدد المستخدم (قطعة)</th>
+              <th>العدد المتبقي (قطعة)</th>
+              <th>الوزن الكلي المتبقي (kg)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((item) => (
+              <tr key={item.key}>
+                <td><strong>{item.length} cm</strong></td>
+                <td><span className="mono text-muted">{item.received}</span></td>
+                <td><span className="mono text-muted">{item.used}</span></td>
+                <td><span className="mono bold" style={{ fontSize: '1.05rem', color: 'var(--primary)' }}>{item.available}</span></td>
+                <td><span className="mono bold color-info">{item.available_weight?.toFixed(2) || '0.00'} kg</span></td>
+              </tr>
             ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Liquids View ────────────────────────────────────── */
-
-function ViewLiquids() {
-  const [items, setItems] = useState([]);
-  const [types, setTypes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  const hasFetched = useRef(false);
-
-  const fetchAll = async () => {
-    setLoading(true);
-    setError('');
-    const [itemsRes, typesRes] = await Promise.all([getLiquids(), getLiquidTypes()]);
-    setLoading(false);
-    if (itemsRes.error) setError(itemsRes.error);
-    else setItems(itemsRes.data || []);
-    if (typesRes.error) setError((prev) => prev || typesRes.error);
-    else setTypes(typesRes.data || []);
-  };
-
-  useEffect(() => {
-    if (!hasFetched.current) {
-      hasFetched.current = true;
-      fetchAll();
-    }
-  }, []);
-
-  if (loading && items.length === 0) {
-    return <div className="storage-loading"><div className="spinner"></div><p>جاري تحميل السوائل...</p></div>;
-  }
-
-  const activeItems = items.filter(i => (parseFloat(i.quantity) || 0) > 0);
-  const totalQuantity = activeItems.reduce((sum, i) => sum + (parseFloat(i.quantity) || 0), 0);
-
-  return (
-    <div className="storage-view-entity">
-      {error && <div className="error-banner">{error}</div>}
-
-      <StatsBar totalItems={activeItems.length} totalQuantity={totalQuantity.toFixed(2)} label="L" />
-
-      <div className="storage-view-panel">
-        <h3>سوائل المخزن ({activeItems.length})</h3>
-        {activeItems.length === 0 ? (
-          <div className="empty-state">لا توجد سوائل مسجلة بعد</div>
-        ) : (
-          <div className="storage-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>النوع</th>
-                  <th>الكمية</th>
-                  <th>الوحدة</th>
-                  <th>ملاحظات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activeItems.map((item) => (
-                  <tr key={item.id}>
-                    <td><strong>{item.type_name}</strong></td>
-                    <td><span className="mono">{item.quantity}</span></td>
-                    <td>L</td>
-                    <td className="notes-cell">{item.notes || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      <div className="storage-lookups-info">
-        <div className="lookup-info-card">
-          <h4>الأنواع المتاحة</h4>
-          <div className="lookup-tags">
-            {Array.from(new Set(activeItems.map(item => item.type_name))).filter(Boolean).sort().map((tName, index) => (
-              <span key={index} className="lookup-tag">{tName}</span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Inks View ───────────────────────────────────────── */
-
-function ViewInks() {
-  const [items, setItems] = useState([]);
-  const [companies, setCompanies] = useState([]);
-  const [colors, setColors] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  const hasFetched = useRef(false);
-
-  const fetchAll = async () => {
-    setLoading(true);
-    setError('');
-    const [itemsRes, companiesRes, colorsRes] = await Promise.all([
-      getInks(), getInkCompanies(), getInkColors()
-    ]);
-    setLoading(false);
-    if (itemsRes.error) setError(itemsRes.error);
-    else setItems(itemsRes.data || []);
-    if (companiesRes.error) setError((prev) => prev || companiesRes.error);
-    else setCompanies(companiesRes.data || []);
-    if (colorsRes.error) setError((prev) => prev || colorsRes.error);
-    else setColors(colorsRes.data || []);
-  };
-
-  useEffect(() => {
-    if (!hasFetched.current) {
-      hasFetched.current = true;
-      fetchAll();
-    }
-  }, []);
-
-  if (loading && items.length === 0) {
-    return <div className="storage-loading"><div className="spinner"></div><p>جاري تحميل الأحبار...</p></div>;
-  }
-
-  const activeItems = items.filter(i => (parseFloat(i.quantity) || 0) > 0);
-  const totalQuantity = activeItems.reduce((sum, i) => sum + (parseFloat(i.quantity) || 0), 0);
-
-  return (
-    <div className="storage-view-entity">
-      {error && <div className="error-banner">{error}</div>}
-
-      <StatsBar totalItems={activeItems.length} totalQuantity={totalQuantity.toFixed(2)} label="kg" />
-
-      <div className="storage-view-panel">
-        <h3>أحبار المخزن ({activeItems.length})</h3>
-        {activeItems.length === 0 ? (
-          <div className="empty-state">لا توجد أحبار مسجلة بعد</div>
-        ) : (
-          <div className="storage-table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>الشركة</th>
-                  <th>اللون</th>
-                  <th>الكمية (kg)</th>
-                  <th>ملاحظات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activeItems.map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.company_name}</td>
-                    <td>{item.color_name}</td>
-                    <td><strong className="mono">{item.quantity}</strong></td>
-                    <td className="notes-cell">{item.notes || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      <div className="storage-lookups-info">
-        <div className="lookup-info-card">
-          <h4>الشركات</h4>
-          <div className="lookup-tags">
-            {Array.from(new Set(activeItems.map(item => item.company_name))).filter(Boolean).sort().map((cName, index) => (
-              <span key={index} className="lookup-tag">{cName}</span>
-            ))}
-          </div>
-        </div>
-        <div className="lookup-info-card">
-          <h4>الألوان</h4>
-          <div className="lookup-tags">
-            {Array.from(new Set(activeItems.map(item => item.color_name))).filter(Boolean).sort().map((cName, index) => (
-              <span key={index} className="lookup-tag">{cName}</span>
-            ))}
-          </div>
-        </div>
+            {data.length === 0 && (
+              <tr>
+                <td colSpan="5" className="empty-state" style={{ textAlign: 'center', padding: '2rem 0' }}>لا توجد مواسير مسجلة حالياً</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );

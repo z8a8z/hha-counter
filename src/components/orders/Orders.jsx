@@ -382,7 +382,19 @@ export default function Orders({ onStatusChange }) {
     <div className="orders-layout">
       <div className="orders-container">
         <div className="orders-header-bar">
-          <h2>إدارة الطلبيات</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h2>إدارة الطلبيات</h2>
+            <button 
+              type="button" 
+              className="btn btn-outline" 
+              onClick={fetchAll} 
+              disabled={loading} 
+              style={{ padding: '0 0.5rem', minWidth: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}
+              title="تحديث البيانات"
+            >
+              🔄
+            </button>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             {/* Migrated print button */}
             <button

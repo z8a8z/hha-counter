@@ -2,11 +2,15 @@ import { useState, useEffect, useRef } from 'react';
 import {
   getRollWidths, addRollWidth, deleteRollWidth,
   getRollTypes, addRollType, deleteRollType,
+  getRollThicknesses, addRollThickness, deleteRollThickness,
   getPipeLengths, addPipeLength, deletePipeLength,
-  getLiquidTypes, addLiquidType,
+  getLiquidTypes, addLiquidType, deleteLiquidType,
+  getLiquidVolumes, addLiquidVolume, deleteLiquidVolume,
   getInkCompanies, addInkCompany, deleteInkCompany,
   getInkColors, addInkColor, deleteInkColor,
   getInkWeights, addInkWeight, deleteInkWeight,
+  getGlueTypes, addGlueType, deleteGlueType,
+  getGlueWeights, addGlueWeight, deleteGlueWeight,
   getPurchaseOffices, addPurchaseOffice, deletePurchaseOffice
 } from '../../lib/database.js';
 
@@ -156,6 +160,20 @@ function getEntityConfig(entity) {
         renderItem: (item) => item.name
       };
 
+    case 'roll_thicknesses':
+      return {
+        getItems: getRollThicknesses,
+        addItem: async (thickness) => {
+          if (!thickness) return { error: 'الرجاء إدخال السماكة' };
+          return addRollThickness(thickness);
+        },
+        deleteItem: deleteRollThickness,
+        isNumeric: true,
+        columnLabel: 'السماكة / الميكرون',
+        placeholder: 'سماكة جديدة',
+        renderItem: (item) => <span className="mono">{item.thickness}</span>
+      };
+
     case 'pipe_lengths':
       return {
         getItems: getPipeLengths,
@@ -177,10 +195,24 @@ function getEntityConfig(entity) {
           if (!name.trim()) return { error: 'الرجاء إدخال اسم السائل' };
           return addLiquidType(name);
         },
-        deleteItem: null,
+        deleteItem: deleteLiquidType,
         columnLabel: 'النوع',
         placeholder: 'نوع سائل جديد',
         renderItem: (item) => item.name
+      };
+
+    case 'liquid_volumes':
+      return {
+        getItems: getLiquidVolumes,
+        addItem: async (volume) => {
+          if (!volume) return { error: 'الرجاء إدخال الحجم' };
+          return addLiquidVolume(volume);
+        },
+        deleteItem: deleteLiquidVolume,
+        isNumeric: true,
+        columnLabel: 'الحجم (L)',
+        placeholder: 'حجم برميل جديد (L)',
+        renderItem: (item) => <span className="mono">{item.volume} L</span>
       };
 
     case 'ink_companies':
@@ -220,6 +252,33 @@ function getEntityConfig(entity) {
         isNumeric: true,
         columnLabel: 'الوزن (kg)',
         placeholder: 'وزن برميل جديد (kg)',
+        renderItem: (item) => <span className="mono">{item.weight} kg</span>
+      };
+
+    case 'glue_types':
+      return {
+        getItems: getGlueTypes,
+        addItem: async (name) => {
+          if (!name.trim()) return { error: 'الرجاء إدخال اسم الصمغ' };
+          return addGlueType(name);
+        },
+        deleteItem: deleteGlueType,
+        columnLabel: 'نوع الصمغ',
+        placeholder: 'نوع صمغ جديد',
+        renderItem: (item) => item.name
+      };
+
+    case 'glue_weights':
+      return {
+        getItems: getGlueWeights,
+        addItem: async (weight) => {
+          if (!weight) return { error: 'الرجاء إدخال الوزن' };
+          return addGlueWeight(weight);
+        },
+        deleteItem: deleteGlueWeight,
+        isNumeric: true,
+        columnLabel: 'الوزن (kg)',
+        placeholder: 'وزن برميل صمغ جديد (kg)',
         renderItem: (item) => <span className="mono">{item.weight} kg</span>
       };
 

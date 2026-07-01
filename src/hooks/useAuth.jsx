@@ -11,9 +11,9 @@ export function AuthProvider({ children }) {
   const [allowedTabs, setAllowedTabs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // On mount, check if user is in localStorage
+  // On mount, check if user is in sessionStorage
   useEffect(() => {
-    const storedUser = localStorage.getItem('hha_user');
+    const storedUser = sessionStorage.getItem('hha_user');
     if (storedUser) {
       try {
         const parsed = JSON.parse(storedUser);
@@ -21,8 +21,8 @@ export function AuthProvider({ children }) {
         // Load permissions for restored session
         loadPermissions(parsed);
       } catch {
-        // Corrupt localStorage — clear and start fresh
-        localStorage.removeItem('hha_user');
+        // Corrupt sessionStorage — clear and start fresh
+        sessionStorage.removeItem('hha_user');
         setLoading(false);
       }
     } else {
@@ -65,7 +65,7 @@ export function AuthProvider({ children }) {
       return { success: false, error };
     }
     setUser(data);
-    localStorage.setItem('hha_user', JSON.stringify(data));
+    sessionStorage.setItem('hha_user', JSON.stringify(data));
     await loadPermissions(data);
     return { success: true };
   };
@@ -73,7 +73,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     setAllowedTabs([]);
-    localStorage.removeItem('hha_user');
+    sessionStorage.removeItem('hha_user');
   };
 
   // Allows re-fetching permissions after an admin/developer modifies them

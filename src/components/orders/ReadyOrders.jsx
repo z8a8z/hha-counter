@@ -275,9 +275,11 @@ export default function ReadyOrders({ refreshTrigger }) {
     if (saveErr) {
       setError('فشل في حفظ البيانات: ' + saveErr);
     } else {
-      setSuccessMsg('تم حفظ الطلبية بنجاح!');
-      fetchOrders();
-      setTimeout(() => setSuccessMsg(''), 2000);
+      setSuccessMsg('تم حفظ التغييرات بنجاح! جاري الخروج...');
+      setTimeout(() => {
+        setEditingOrder(null);
+        fetchOrders();
+      }, 1000);
     }
   };
 
@@ -486,7 +488,7 @@ export default function ReadyOrders({ refreshTrigger }) {
                 <div className="info-actions" style={{ marginTop: '1.25rem', gap: '0.85rem' }}>
                   {!isViewOnly && (
                     <button className="btn btn-primary" onClick={handleSave} disabled={loading} style={{ fontSize: '1.05rem', padding: '0.75rem 1rem' }}>
-                      {loading ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+                      {loading ? 'جاري الحفظ...' : 'حفظ وخروج'}
                     </button>
                   )}
                   {!isViewOnly && (
@@ -575,7 +577,19 @@ export default function ReadyOrders({ refreshTrigger }) {
     <div className="ready-layout">
       <div className="ready-container">
         <div className="ready-header-bar">
-          <h2>قسم جاهز (الطلبيات)</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h2>قسم جاهز (الطلبيات)</h2>
+            <button 
+              type="button" 
+              className="btn btn-outline" 
+              onClick={fetchOrders} 
+              disabled={loading} 
+              style={{ padding: '0 0.5rem', minWidth: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)' }}
+              title="تحديث البيانات"
+            >
+              🔄
+            </button>
+          </div>
           <button className="btn btn-primary" onClick={handleOpenPrepareOrder} disabled={loading}>
             تجهيز طلبية +
           </button>

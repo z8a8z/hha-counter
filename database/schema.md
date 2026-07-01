@@ -60,6 +60,7 @@
 | `width_id` | `int4` |  Nullable |
 | `weight` | `numeric` |  |
 | `purchase_list_item_id` | `int4` |  Nullable |
+| `thickness_id` | `int4` |  Nullable |
 
 ## Table `pipe_lengths`
 
@@ -220,6 +221,7 @@
 | `created_by` | `text` |  Nullable |
 | `created_at` | `timestamptz` |  |
 | `updated_at` | `timestamptz` |  |
+| `delivery_date` | `date` |  Nullable |
 
 ## Table `order_forms`
 
@@ -305,6 +307,77 @@
 | `roll_id` | `int4` |  Nullable |
 | `variant_id_1` | `int4` |  |
 | `variant_id_2` | `int4` |  Nullable |
+| `quantity` | `numeric` |  |
+| `notes` | `text` |  Nullable |
+| `created_by` | `text` |  Nullable |
+| `created_at` | `timestamptz` |  |
+
+## Table `roll_thicknesses`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `thickness` | `numeric` |  Unique |
+| `created_at` | `timestamptz` |  |
+
+## Table `liquid_volumes`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `volume` | `numeric` |  Unique |
+| `created_at` | `timestamptz` |  |
+
+## Table `glue_types`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `name` | `text` |  Unique |
+| `created_at` | `timestamptz` |  |
+
+## Table `glue_weights`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `weight` | `numeric` |  Unique |
+| `created_at` | `timestamptz` |  |
+
+## Table `glues`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `type_id` | `int4` |  Unique |
+| `quantity` | `numeric` |  |
+| `unit` | `text` |  |
+| `notes` | `text` |  Nullable |
+| `created_at` | `timestamptz` |  |
+| `updated_at` | `timestamptz` |  |
+
+## Table `withdrawal_records`
+
+### Columns
+
+| Name | Type | Constraints |
+|------|------|-------------|
+| `id` | `int4` | Primary |
+| `item_type` | `text` |  |
+| `roll_id` | `int4` |  Nullable |
+| `variant_id_1` | `int4` |  |
+| `variant_id_2` | `int4` |  Nullable |
+| `variant_id_3` | `int4` |  Nullable |
 | `quantity` | `numeric` |  |
 | `notes` | `text` |  Nullable |
 | `created_by` | `text` |  Nullable |
